@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import RNFS from "react-native-fs";
 import Video from "react-native-video";
-import { compressVideoNative } from "../utilities/videoCompressor"; // Import the helper
+import { compressVideoNative } from "../../utilities/videoCompressor"; // Import the helper
 
 export const VideoPreviewScreen = ({
   path: originalPath, // Rename prop to avoid confusion
