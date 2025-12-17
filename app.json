@@ -36,7 +36,6 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
- 
       "react-native-compressor",
       [
         "react-native-vision-camera",
@@ -46,12 +45,19 @@
           "microphonePermissionText": "$(PRODUCT_NAME) needs access to your Microphone."
         }
       ],
+       [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": true,
+          "supportsPictureInPicture": true
+        }
+      ],
       [
-      "react-native-fast-tflite",
-      {
-        "enableAndroidGpuLibraries": true
-      }
-    ],
+        "react-native-fast-tflite",
+        {
+          "enableAndroidGpuLibraries": true
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -63,7 +69,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

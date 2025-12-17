@@ -35,6 +35,6 @@ export const compressVideoNative = async (sourcePath: string) => {
   } catch (error) {
     console.error("Compression failed:", error);
     Alert.alert("Error", "Video compression failed.");
-    return null;
+    return "";
   }
 };

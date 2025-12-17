@@ -11,13 +11,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { OTPRequestCreateURL } from "./urlList";
 
 // --- API CONFIGURATION ---
-export const BASE_URL = "https://cam.dropapp.in";
-
-export const OTPRequestCreateURL = () => {
-  return `${BASE_URL}/users/otp-request-create?dev=true`;
-};
 
 export default function LoginScreen({ onLogin }: { onLogin: any }) {
   const [loading, setLoading] = useState(false);

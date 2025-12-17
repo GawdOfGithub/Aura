@@ -3,6 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React, { createContext, useEffect, useMemo, useReducer } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { VideoStorageProvider } from "./testApp/contexts";
 import HomeScreen from "./testApp/homeScreen";
 import LoginScreen from "./testApp/loginScreen";
 
@@ -119,31 +120,33 @@ export default function AppNavigation() {
         userData: state.userData,
         isLoading: state.isLoading,
       }}>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {state.userToken == null ? (
-            // NOT LOGGED IN
-            <Stack.Screen
-              name='Login'
-              options={{
-                animationTypeForReplace: state.isSignout ? "pop" : "push",
-              }}>
-              {/* Pass authContext.signIn as a prop to avoid circular imports */}
-              {(props) => (
-                <LoginScreen
-                  {...props}
-                  onLogin={(token: any, user: any) =>
-                    authContext.signIn(token, user)
-                  }
-                />
-              )}
-            </Stack.Screen>
-          ) : (
-            // LOGGED IN
-            <Stack.Screen name='Home' component={HomeScreen} />
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
+      <VideoStorageProvider>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            {state.userToken == null ? (
+              // NOT LOGGED IN
+              <Stack.Screen
+                name='Login'
+                options={{
+                  animationTypeForReplace: state.isSignout ? "pop" : "push",
+                }}>
+                {/* Pass authContext.signIn as a prop to avoid circular imports */}
+                {(props) => (
+                  <LoginScreen
+                    {...props}
+                    onLogin={(token: any, user: any) =>
+                      authContext.signIn(token, user)
+                    }
+                  />
+                )}
+              </Stack.Screen>
+            ) : (
+              // LOGGED IN
+              <Stack.Screen name='Home' component={HomeScreen} />
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </VideoStorageProvider>
     </AuthContext.Provider>
   );
 }

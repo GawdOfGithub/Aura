@@ -1,9 +1,11 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   Image,
   LayoutAnimation,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   UIManager,
@@ -13,6 +15,9 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthContext } from "../index";
 import { SeamlessCamera } from "./cameraSceen"; // Import the file above
+import { VideoBubble } from "./components/videoComponent";
+import { useVideosStorage } from "./contexts";
+import { useGroupData } from "./hooks";
 
 // ----- THIS CHANGED: Enable LayoutAnimation for Android -----
 if (
@@ -30,8 +35,27 @@ const SMALL_BOTTOM = 50;
 const SMALL_LEFT = (WINDOW_WIDTH - SMALL_WIDTH) / 2;
 
 const TestAppHomeScreen = () => {
-  const { userData } = useContext(AuthContext);
+  const { userData, userToken } = useContext(AuthContext);
+  const { groupData, loading } = useGroupData(userToken || "");
+  const { getVideosLast24Hours, isLoading, deleteAllVideos, syncRemoteVideos } =
+    useVideosStorage();
 
+  // 3. The Magic: Sync when groupData arrives
+  useEffect(() => {
+    if (
+      groupData &&
+      groupData.video_chats &&
+      groupData.video_chats.length > 0
+    ) {
+      // Pass the video_chats array to the context
+      syncRemoteVideos(groupData.video_chats);
+    }
+  }, [groupData, syncRemoteVideos]);
+
+  // useEffect(() => {
+  //   deleteAllVideos();
+  // }, []);
+  const recentVideos = getVideosLast24Hours();
   // ----- THIS CHANGED: Track expansion state instead of Open/Closed -----
   const [isCameraExpanded, setIsCameraExpanded] = useState(false);
 
@@ -53,12 +77,13 @@ const TestAppHomeScreen = () => {
   };
 
   return (
-    <SafeAreaProvider style={{ backgroundColor: "black", flex: 1 }}>
+    <SafeAreaProvider style={{ backgroundColor: "#212121", flex: 1 }}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         {/* Header */}
         <View style={styles.header}>
           <View style={{ width: 40 }} />
           <Text style={styles.headerTitle}>Buzz</Text>
+
           <View style={styles.avatarContainer}>
             {userData?.profile_photo ? (
               <Image
@@ -72,12 +97,35 @@ const TestAppHomeScreen = () => {
         </View>
 
         {/* Main Feed Content Placeholder */}
-        <View style={styles.content}>{/* Your feed list would go here */}</View>
+        <View style={styles.content}>
+          <Text style={styles.groupTitle}>{groupData?.group_name}</Text>
+          <ScrollView
+            contentContainerStyle={{
+              width: "100%",
+              flexDirection: "row",
+              flexWrap: "wrap",
+            }}>
+            {recentVideos.map((video) => (
+              <VideoBubble
+                key={video.id}
+                videoUri={video.videoFilePath}
+                videoCreatedBy={video.videoCapturedBy}
+              />
+            ))}
+            {isLoading && <ActivityIndicator size={"large"} color={"#fff"} />}
+            {recentVideos.length === 0 && !isLoading && (
+              <Text
+                style={{
+                  color: "#EAE0CF",
+                  marginTop: 20,
+                  fontStyle: "italic",
+                }}>
+                No videos in the last 24h, Let's Start Buzzing!
+              </Text>
+            )}
+          </ScrollView>
+        </View>
 
-        {/* ----- THIS CHANGED: Single Camera Component ----- 
-          It is always mounted. We change the style of the wrapper View 
-          based on isCameraExpanded state.
-        */}
         <View
           style={[
             styles.cameraWrapper,
@@ -111,7 +159,13 @@ const styles = StyleSheet.create({
     zIndex: 1, // Keep header behind camera when expanded
   },
   headerTitle: {
-    color: "orange",
+    color: "#e37239",
+    fontSize: 24,
+    fontStyle: "italic",
+    fontWeight: "bold",
+  },
+  groupTitle: {
+    color: "#eee9df",
     fontSize: 24,
     fontStyle: "italic",
     fontWeight: "bold",
@@ -132,8 +186,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    paddingTop: 20,
+    paddingHorizontal: 20,
   },
 
   // ----- THIS CHANGED: Styles for the Camera Animation -----

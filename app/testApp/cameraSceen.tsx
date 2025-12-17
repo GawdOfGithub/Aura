@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
@@ -10,6 +10,9 @@ import {
   useCameraPermission,
   useMicrophonePermission,
 } from "react-native-vision-camera";
+import { AuthContext } from "../index";
+import { useVideosStorage } from "./contexts";
+import { uploadVideoToS3 } from "./uploader";
 
 // ----- THIS CHANGED: New Props Interface to communicate with Home Screen -----
 type SeamlessCameraProps = {
@@ -27,6 +30,9 @@ export const SeamlessCamera = ({
 }: SeamlessCameraProps) => {
   const [camPosition, setCamPosition] = useState<CameraPosition>("back");
   const device = useCameraDevice(camPosition);
+  const { addCapturedVideo } = useVideosStorage();
+
+  const { userToken, userData } = useContext(AuthContext);
 
   // ----- THIS CHANGED: High quality format for both preview and recording -----
   const cameraFormat = useCameraFormat(device, [
@@ -75,6 +81,8 @@ export const SeamlessCamera = ({
       videoCodec: "h265",
       onRecordingFinished: (video) => {
         setIsRecording(false);
+        uploadVideoToS3(video.path, userToken || "");
+        addCapturedVideo(video.path, userData?.name || "");
         onVideoCaptured(video.path);
       },
       onRecordingError: (err) => {
@@ -139,8 +147,6 @@ export const SeamlessCamera = ({
     lastTap.current = now;
   };
 
-  // ----- THIS CHANGED: Dynamic Gesture Definitions -----
-
   // 1. Pan Gesture: Only active when expanded (Recording/Zooming)
   const panGesture = Gesture.Pan()
     .enabled(isExpanded)
@@ -162,13 +168,12 @@ export const SeamlessCamera = ({
 
   return (
     <GestureDetector gesture={composedGesture}>
-      {/* ----- THIS CHANGED: Removed fixed sizes, fills parent ----- */}
       <View style={styles.container}>
         <Camera
           ref={camera}
           style={StyleSheet.absoluteFill}
           device={device}
-          isActive={true} // Always true to avoid crash
+          isActive={true}
           video={true}
           audio={true}
           format={cameraFormat}
@@ -215,7 +220,7 @@ const styles = StyleSheet.create({
     pointerEvents: "box-none", // Allow touches to pass through empty areas
   },
   instructionText: {
-    color: "white",
+    color: "orange",
     marginBottom: 10,
     fontWeight: "600",
     textShadowColor: "rgba(0,0,0,0.7)",
