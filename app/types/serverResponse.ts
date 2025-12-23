@@ -1,3 +1,14 @@
+/* 
+Store Interfaces of response types from backend
+ */
+
+export interface UserData {
+  id: string;
+  name: string;
+  phone_no: string;
+  profile_photo: string;
+}
+
 export interface GroupMember {
   user_id: string;
   name: string;

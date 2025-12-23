@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { AuthContext } from "../index";
+import { useAppSelector } from "../store/hooks";
 import { SeamlessCamera } from "./cameraSceen"; // Import the file above
 import { VideoBubble } from "./components/videoComponent";
 import { useVideosStorage } from "./contexts";
@@ -35,8 +35,8 @@ const SMALL_BOTTOM = 50;
 const SMALL_LEFT = (WINDOW_WIDTH - SMALL_WIDTH) / 2;
 
 const TestAppHomeScreen = () => {
-  const { userData, userToken } = useContext(AuthContext);
-  const { groupData, loading } = useGroupData(userToken || "");
+  const { data: userData } = useAppSelector((state) => state.user);
+  const { groupData } = useGroupData();
   const { getVideosLast24Hours, isLoading, deleteAllVideos, syncRemoteVideos } =
     useVideosStorage();
 
@@ -120,7 +120,7 @@ const TestAppHomeScreen = () => {
                   marginTop: 20,
                   fontStyle: "italic",
                 }}>
-                No videos in the last 24h, Let's Start Buzzing!
+                No videos in the last 24h, Let`s Start Buzzing!
               </Text>
             )}
           </ScrollView>

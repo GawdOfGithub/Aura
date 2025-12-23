@@ -16,7 +16,8 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.25",
     "@react-navigation/native-stack": "^7.8.6",
-    "@reduxjs/toolkit": "^2.11.1",
+    "@reduxjs/toolkit": "^2.11.2",
+    "axios": "^1.13.2",
     "expo": "~54.0.25",
     "expo-constants": "~18.0.10",
     "expo-dev-client": "~6.0.18",
@@ -44,7 +45,8 @@
     "react-native-vision-camera": "^4.7.3",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1",
-    "react-redux": "^9.2.0"
+    "react-redux": "^9.2.0",
+    "redux-persist": "^6.0.0"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",

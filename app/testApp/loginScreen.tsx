@@ -11,11 +11,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { login } from "../store/features/users/userSlice";
+import { useAppDispatch } from "../store/hooks";
 import { OTPRequestCreateURL } from "./urlList";
 
 // --- API CONFIGURATION ---
 
-export default function LoginScreen({ onLogin }: { onLogin: any }) {
+export default function LoginScreen() {
+  const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
 
@@ -46,7 +49,8 @@ export default function LoginScreen({ onLogin }: { onLogin: any }) {
         Alert.alert("Success", `Welcome ${data.user.name || "User"} to Buzz`, [
           {
             text: "OK",
-            onPress: () => onLogin(data.token, data.user), // Navigate to Home
+            onPress: () =>
+              dispatch(login({ token: data.token, userData: data.user })), // Navigate to Home
           },
         ]);
       } else {

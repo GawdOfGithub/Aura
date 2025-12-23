@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
@@ -10,7 +10,7 @@ import {
   useCameraPermission,
   useMicrophonePermission,
 } from "react-native-vision-camera";
-import { AuthContext } from "../index";
+import { useAppSelector } from "../store/hooks";
 import { useVideosStorage } from "./contexts";
 import { uploadVideoToS3 } from "./uploader";
 
@@ -32,8 +32,9 @@ export const SeamlessCamera = ({
   const device = useCameraDevice(camPosition);
   const { addCapturedVideo } = useVideosStorage();
 
-  const { userToken, userData } = useContext(AuthContext);
-
+  const { token: userToken, data: userData } = useAppSelector(
+    (state) => state.user
+  );
   // ----- THIS CHANGED: High quality format for both preview and recording -----
   const cameraFormat = useCameraFormat(device, [
     { videoResolution: { width: 1280, height: 720 } },

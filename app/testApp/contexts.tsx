@@ -7,7 +7,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { VideoChat } from "./interfaces";
+import { VideoChat } from "../types";
 
 // --- Configuration ---
 const STORAGE_KEY = "@captured_videos_metadata";

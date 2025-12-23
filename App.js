@@ -1,5 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ActivityIndicator } from "react-native";
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
 import AppNavigation from "./app/index";
+import { persistor, store } from "./app/store";
+
 const clearAuthStorage = async () => {
   try {
     await AsyncStorage.removeItem("userToken");
@@ -10,10 +15,20 @@ const clearAuthStorage = async () => {
   }
 };
 
-export default function App() {
+const App = () => {
   // UNCOMMENT THIS useEffect block to run the clear function once on app load
   //   useEffect(() => {
   //     clearAuthStorage();
   //   }, []);
-  return <AppNavigation />;
-}
+  return (
+    <Provider store={store}>
+      <PersistGate
+        loading={<ActivityIndicator size='large' />}
+        persistor={persistor}>
+        <AppNavigation />
+      </PersistGate>
+    </Provider>
+  );
+};
+
+export default App;
