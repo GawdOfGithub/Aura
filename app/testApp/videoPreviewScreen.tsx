@@ -1,118 +1,163 @@
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import RNFS from "react-native-fs";
 import Video from "react-native-video";
-import { compressVideoNative } from "../../utilities/videoCompressor"; // Import the helper
+import { compressVideoNative } from "../../utilities/videoCompressor";
 
-export const VideoPreviewScreen = ({
-  path: originalPath, // Rename prop to avoid confusion
-  onRetake,
-}: {
-  path: string;
-  onRetake: () => void;
-}) => {
-  // 1. State to hold the final video path (starts with original, updates to compressed)
-  const [currentPath, setCurrentPath] = useState(originalPath);
-  const [isCompressing, setIsCompressing] = useState(false);
-  const [durationSecs, setDurationSecs] = useState<number | null>(null);
+// Define the expected params for type safety (optional but recommended)
+type VideoStats = {
+  originalSize: string; // in MB
+  compressedSize: string; // in MB
+};
 
-  // 2. Trigger Compression on Mount
+export const VideoPreviewScreen = ({ route, navigation }: any) => {
+  // 1. Get the video path from navigation params
+  // Using generic "any" for props, but usually you'd use NativeStackScreenProps
+  const originalPath = route.params?.path;
+
+  const [compressedPath, setCompressedPath] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(true);
+  const [viewMode, setViewMode] = useState<"original" | "compressed">(
+    "original"
+  );
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [stats, setStats] = useState<VideoStats>({
+    originalSize: "...",
+    compressedSize: "...",
+  });
+
+  // 2. Handle Retake (Go Back)
+  const handleRetake = () => {
+    navigation.goBack();
+  };
+
   useEffect(() => {
-    const performCompression = async () => {
-      setIsCompressing(true);
+    if (!originalPath) return;
 
-      const compressedUri = await compressVideoNative(originalPath);
+    const prepareVideo = async () => {
+      try {
+        setIsCompressing(true);
 
-      if (compressedUri) {
-        // If successful, switch the player to the new smaller file
-        // The user might see a tiny blip as the video reloads, which is normal
-        console.log("Swapping to compressed video:", compressedUri);
-        setCurrentPath(compressedUri);
-      } else {
-        Alert.alert("Notice", "Compression failed, using original file.");
+        // Get Original Size
+        const origStat = await RNFS.stat(originalPath);
+        const origSizeMB = (origStat.size / (1024 * 1024)).toFixed(2);
+        setStats((prev) => ({ ...prev, originalSize: origSizeMB }));
+
+        // Start Compression
+        const compressedUri = await compressVideoNative(originalPath);
+
+        if (compressedUri) {
+          const compStat = await RNFS.stat(compressedUri);
+          const compSizeMB = (compStat.size / (1024 * 1024)).toFixed(2);
+
+          setCompressedPath(compressedUri);
+          setStats((prev) => ({ ...prev, compressedSize: compSizeMB }));
+        }
+      } catch (error) {
+        console.error("Compression/Stat error:", error);
+      } finally {
+        setIsCompressing(false);
       }
-
-      setIsCompressing(false);
     };
 
-    performCompression();
+    prepareVideo();
   }, [originalPath]);
 
-  // 3. Updated Info Function
-  const showVideoInfo = async () => {
-    try {
-      const exists = await RNFS.exists(currentPath);
-      if (exists) {
-        const stat = await RNFS.stat(currentPath);
-        const sizeInMB = (stat.size / (1024 * 1024)).toFixed(2);
-        const durationText = durationSecs
-          ? `Duration: ${durationSecs.toFixed(1)} seconds`
-          : "Duration: Loading...";
+  // Determine active source
+  const activePath =
+    viewMode === "compressed" && compressedPath ? compressedPath : originalPath;
+  const activeSize =
+    viewMode === "compressed" ? stats.compressedSize : stats.originalSize;
+  const isShowingCompressed = viewMode === "compressed";
 
-        const typeLabel =
-          currentPath === originalPath
-            ? "Original (Raw)"
-            : "Compressed (Optimized)";
-
-        Alert.alert(
-          "Video Info",
-          `Type: ${typeLabel}\nPath: ${currentPath}\n\nSize: ${sizeInMB} MB\n${durationText}`,
-          [{ text: "OK" }]
-        );
-      } else {
-        Alert.alert("Error", "File not found");
-      }
-    } catch (error) {
-      Alert.alert("Error", "Could not get file info");
-    }
-  };
+  if (!originalPath) return null;
 
   return (
     <View style={styles.container}>
       <Video
-        source={{ uri: currentPath }} // Use state, not prop
+        source={{ uri: activePath }}
         style={styles.fullScreenVideo}
         resizeMode='cover'
         repeat={true}
         controls={false}
-        onLoad={(data) => {
-          setDurationSecs(data.duration);
-        }}
+        onLoad={(data) => setVideoDuration(data.duration)}
       />
 
-      {/* Overlay Controls */}
-      <View style={styles.previewUiContainer}>
-        <Pressable onPress={onRetake} style={styles.iconButton}>
-          <Text style={styles.buttonText}>X</Text>
+      {/* --- Top Overlay: Info --- */}
+      <View style={styles.topOverlay}>
+        <Pressable onPress={handleRetake} style={styles.closeButton}>
+          <Text style={styles.closeText}>✕</Text>
         </Pressable>
 
-        <Pressable
-          onPress={showVideoInfo}
-          style={[styles.iconButton, styles.infoButton]}>
-          <Text style={styles.buttonText}>i</Text>
-        </Pressable>
+        <View style={styles.infoPill}>
+          <Text style={styles.infoTitle}>
+            {isShowingCompressed ? "COMPRESSED" : "ORIGINAL"}
+          </Text>
+          <Text style={styles.infoDetails}>
+            {activeSize} MB • {videoDuration.toFixed(1)}s
+          </Text>
+        </View>
+
+        {/* Empty view to balance the flex layout (so pill stays centered) */}
+        <View style={{ width: 40 }} />
       </View>
 
-      {/* 4. Optional: Show a subtle indicator while compressing */}
-      {isCompressing && (
-        <View style={styles.compressingOverlay}>
-          <ActivityIndicator size='small' color='#fff' />
-          <Text style={styles.compressingText}>Optimizing...</Text>
+      {/* --- Bottom Overlay: Toggle --- */}
+      <View style={styles.bottomControls}>
+        <View style={styles.toggleContainer}>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              viewMode === "original" && styles.toggleActive,
+            ]}
+            onPress={() => setViewMode("original")}>
+            <Text
+              style={[
+                styles.toggleText,
+                viewMode === "original" && styles.toggleTextActive,
+              ]}>
+              Original
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              viewMode === "compressed" && styles.toggleActive,
+              !compressedPath && styles.toggleDisabled,
+            ]}
+            disabled={!compressedPath}
+            onPress={() => setViewMode("compressed")}>
+            {isCompressing ? (
+              <ActivityIndicator size='small' color='#999' />
+            ) : (
+              <Text
+                style={[
+                  styles.toggleText,
+                  viewMode === "compressed" && styles.toggleTextActive,
+                ]}>
+                Compressed
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
-      )}
+
+        {isCompressing && (
+          <Text style={styles.statusText}>Optimizing video...</Text>
+        )}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  // ... (Your existing styles remain the same)
   container: {
     flex: 1,
     backgroundColor: "black",
@@ -121,46 +166,94 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  previewUiContainer: {
+  // TOP SECTION
+  topOverlay: {
     position: "absolute",
-    top: 60,
+    top: 60, // Adjust for Safe Area if needed
     left: 20,
     right: 20,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-start",
   },
-  iconButton: {
+  closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
-  infoButton: {
-    backgroundColor: "rgba(0,122,255,0.8)",
-  },
-  buttonText: {
+  closeText: {
     color: "white",
+    fontSize: 20,
     fontWeight: "bold",
-    fontSize: 18,
   },
-  // New Styles for the indicator
-  compressingOverlay: {
-    position: "absolute",
-    bottom: 40,
-    alignSelf: "center",
-    backgroundColor: "rgba(0,0,0,0.7)",
-    paddingHorizontal: 15,
+  infoPill: {
+    backgroundColor: "rgba(0,0,0,0.6)",
     paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 20,
-    flexDirection: "row",
     alignItems: "center",
-    gap: 8,
   },
-  compressingText: {
+  infoTitle: {
+    color: "#4ade80",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  infoDetails: {
     color: "white",
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "600",
+    fontVariant: ["tabular-nums"],
+  },
+
+  // BOTTOM SECTION
+  bottomControls: {
+    position: "absolute",
+    bottom: 50,
+    width: "100%",
+    alignItems: "center",
+    gap: 10,
+  },
+  toggleContainer: {
+    flexDirection: "row",
+    backgroundColor: "rgba(50,50,50,0.8)",
+    borderRadius: 30,
+    padding: 4,
+    width: 240,
+    height: 50,
+  },
+  toggleButton: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 26,
+  },
+  toggleActive: {
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  toggleDisabled: {
+    opacity: 0.5,
+  },
+  toggleText: {
+    color: "#aaa",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  toggleTextActive: {
+    color: "black",
+    fontWeight: "bold",
+  },
+  statusText: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 12,
   },
 });

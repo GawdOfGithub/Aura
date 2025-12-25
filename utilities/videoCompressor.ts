@@ -6,8 +6,8 @@ export const compressVideoNative = async (sourcePath: string) => {
   try {
     console.log("Starting native hardware compression...");
 
-    // Target: 2 Mbps (Perfect for India 4G)
-    const TARGET_BITRATE = 2 * 1000 * 1000;
+    // Target: 1 Mbps (Perfect for India 4G)
+    const TARGET_BITRATE = 1000 * 1000;
 
     const resultPath = await Video.compress(sourcePath, {
       // 1. Compression Method: Manual allows exact control

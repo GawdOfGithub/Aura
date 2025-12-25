@@ -62,7 +62,7 @@ export const VideoBubble = ({
     });
 
     return () => subscription.remove();
-  }, []);
+  });
 
   const openModal = () => {
     setIsVisible(true);

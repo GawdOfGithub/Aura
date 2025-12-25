@@ -12,6 +12,7 @@ import {
 } from "redux-persist";
 import { injectStore } from "../service/apiClient";
 import groupReducer from "./features/groups/groupSlice";
+import uploadReducer from "./features/upload/uploadSlice";
 import userReducer from "./features/users/userSlice";
 
 // 1. Persist Config
@@ -26,6 +27,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
   user: userReducer,
   group: groupReducer,
+  upload: uploadReducer,
 });
 
 // 3. Create Persisted Reducer

@@ -5,6 +5,7 @@ import { useAppSelector } from "./store/hooks";
 import { VideoStorageProvider } from "./testApp/contexts";
 import HomeScreen from "./testApp/homeScreen";
 import LoginScreen from "./testApp/loginScreen";
+import { VideoPreviewScreen } from "./testApp/videoPreviewScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -17,14 +18,16 @@ export default function AppNavigation() {
   return (
     <VideoStorageProvider>
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {!isAuthenticated ? (
+        {!isAuthenticated ? (
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name='Login' component={LoginScreen} />
-          ) : (
-            // LOGGED IN
+          </Stack.Navigator>
+        ) : (
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name='Home' component={HomeScreen} />
-          )}
-        </Stack.Navigator>
+            <Stack.Screen name='VideoPreview' component={VideoPreviewScreen} />
+          </Stack.Navigator>
+        )}
       </NavigationContainer>
     </VideoStorageProvider>
   );

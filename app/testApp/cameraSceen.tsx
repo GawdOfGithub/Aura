@@ -12,7 +12,6 @@ import {
 } from "react-native-vision-camera";
 import { useAppSelector } from "../store/hooks";
 import { useVideosStorage } from "./contexts";
-import { uploadVideoToS3 } from "./uploader";
 
 // ----- THIS CHANGED: New Props Interface to communicate with Home Screen -----
 type SeamlessCameraProps = {
@@ -20,6 +19,7 @@ type SeamlessCameraProps = {
   onExpand: () => void;
   onClose: () => void;
   onVideoCaptured: (path: string) => void;
+  navigation: any;
 };
 
 export const SeamlessCamera = ({
@@ -27,6 +27,7 @@ export const SeamlessCamera = ({
   onExpand,
   onClose,
   onVideoCaptured,
+  navigation,
 }: SeamlessCameraProps) => {
   const [camPosition, setCamPosition] = useState<CameraPosition>("back");
   const device = useCameraDevice(camPosition);
@@ -58,6 +59,9 @@ export const SeamlessCamera = ({
   const maxZoom = Math.min(device?.maxZoom ?? 5, 5);
   const [zoom, setZoom] = useState(minZoom);
 
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingTime = useRef<NodeJS.Timeout | null | number>(null);
+
   const recordingTimeout = useRef<NodeJS.Timeout | null | number>(null);
   const lastTap = useRef<number>(0);
   const lastFlipX = useRef(0);
@@ -72,21 +76,34 @@ export const SeamlessCamera = ({
     setZoom(minZoom);
   }, [device?.id]);
 
-  // --- ACTIONS ---
-
   const startRecording = () => {
     if (!camera.current) return;
     setIsRecording(true);
+
+    const startTime = Date.now();
+    setRecordingDuration(0);
+    recordingTime.current = setInterval(() => {
+      setRecordingDuration(Math.floor((Date.now() - startTime) / 1000));
+    }, 500);
+
     camera.current.startRecording({
       fileType: "mp4",
       videoCodec: "h265",
-      onRecordingFinished: (video) => {
+      onRecordingFinished: async (video) => {
+        if (recordingTime.current) clearInterval(recordingTime.current);
+        setRecordingDuration(0);
         setIsRecording(false);
-        uploadVideoToS3(video.path, userToken || "");
-        addCapturedVideo(video.path, userData?.name || "");
-        onVideoCaptured(video.path);
+        navigation.navigate("VideoPreview", { path: video.path });
+        // navigation.navigate("VideoPreview", {
+        //   path: video.path,
+        // });
+        // uploadVideoToS3(video.path, userToken || "");
+        // addCapturedVideo(video.path, userData?.name || "");
+        //  onVideoCaptured(video.path);
       },
       onRecordingError: (err) => {
+        if (recordingTime.current) clearInterval(recordingTime.current);
+        setRecordingDuration(0);
         console.error(err);
         setIsRecording(false);
       },
@@ -167,6 +184,11 @@ export const SeamlessCamera = ({
 
   if (!device || !hasCamPermission) return <View style={styles.blackBg} />;
 
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
   return (
     <GestureDetector gesture={composedGesture}>
       <View style={styles.container}>
@@ -185,14 +207,15 @@ export const SeamlessCamera = ({
         {isExpanded && (
           <View style={styles.overlay}>
             {isRecording ? (
-              <Text style={[styles.instructionText, { color: "red" }]}>
-                Recording... {zoom.toFixed(1)}x
-              </Text>
+              <View style={styles.recordingStatusContainer}>
+                <View style={styles.recordingDot} />
+                <Text style={styles.timerText}>
+                  {formatDuration(recordingDuration)} {zoom.toFixed(1)}x
+                </Text>
+              </View>
             ) : (
               <Text style={styles.instructionText}>Hold to Record</Text>
             )}
-
-            {isRecording && <View style={styles.recordingDot} />}
 
             {!isRecording && (
               <TouchableOpacity style={styles.closeButton} onPress={onClose}>
@@ -231,9 +254,8 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: "red",
     borderWidth: 2,
-    borderColor: "white",
+    backgroundColor: "#ff3b30",
   },
   closeButton: {
     marginTop: 20, // Space below text
@@ -250,5 +272,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textShadowColor: "rgba(0,0,0,0.5)",
     textShadowRadius: 4,
+  },
+  recordingStatusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginBottom: 20,
+  },
+  timerText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "600",
+    marginLeft: 10, // Space between dot and text
+    fontVariant: ["tabular-nums"], // Prevents jitter as numbers change
   },
 });

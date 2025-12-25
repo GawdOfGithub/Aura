@@ -34,7 +34,7 @@ const SMALL_BOTTOM = 50;
 // Calculate center position for the small box
 const SMALL_LEFT = (WINDOW_WIDTH - SMALL_WIDTH) / 2;
 
-const TestAppHomeScreen = () => {
+const TestAppHomeScreen = ({ navigation }: any) => {
   const { data: userData } = useAppSelector((state) => state.user);
   const { groupData } = useGroupData();
   const { getVideosLast24Hours, isLoading, deleteAllVideos, syncRemoteVideos } =
@@ -135,6 +135,7 @@ const TestAppHomeScreen = () => {
             isExpanded={isCameraExpanded}
             onExpand={handleExpand}
             onClose={handleClose}
+            navigation={navigation}
             onVideoCaptured={handleVideoCaptured}
           />
         </View>
