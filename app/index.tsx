@@ -1,6 +1,7 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
+import { useBackgroundUploadTrigger } from "./hooks/useBackgroundUploadTrigger";
 import { useAppSelector } from "./store/hooks";
 import { VideoStorageProvider } from "./testApp/contexts";
 import HomeScreen from "./testApp/homeScreen";
@@ -12,9 +13,9 @@ const Stack = createNativeStackNavigator();
 export default function AppNavigation() {
   const { isAuthenticated } = useAppSelector((state) => state.user);
 
-  // --- LOADING VIEW ---
+  // INIT PROCESSES(Hooks)
+  useBackgroundUploadTrigger();
 
-  // --- NAVIGATION STRUCTURE ---
   return (
     <VideoStorageProvider>
       <NavigationContainer>

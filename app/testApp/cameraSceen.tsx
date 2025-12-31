@@ -1,3 +1,4 @@
+import { nanoid } from "@reduxjs/toolkit";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -10,7 +11,8 @@ import {
   useCameraPermission,
   useMicrophonePermission,
 } from "react-native-vision-camera";
-import { useAppSelector } from "../store/hooks";
+import { fetchPresignedUrl } from "../store/features/upload/uploadThunk";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { useVideosStorage } from "./contexts";
 
 // ----- THIS CHANGED: New Props Interface to communicate with Home Screen -----
@@ -29,6 +31,7 @@ export const SeamlessCamera = ({
   onVideoCaptured,
   navigation,
 }: SeamlessCameraProps) => {
+  const dispatch = useAppDispatch(); // 1. Get Dispatch
   const [camPosition, setCamPosition] = useState<CameraPosition>("back");
   const device = useCameraDevice(camPosition);
   const { addCapturedVideo } = useVideosStorage();
@@ -61,7 +64,7 @@ export const SeamlessCamera = ({
 
   const [recordingDuration, setRecordingDuration] = useState(0);
   const recordingTime = useRef<NodeJS.Timeout | null | number>(null);
-
+  const currentRecordingId = useRef<string | null>(null);
   const recordingTimeout = useRef<NodeJS.Timeout | null | number>(null);
   const lastTap = useRef<number>(0);
   const lastFlipX = useRef(0);
@@ -79,6 +82,16 @@ export const SeamlessCamera = ({
   const startRecording = () => {
     if (!camera.current) return;
     setIsRecording(true);
+
+    const uniqueSessionId = nanoid();
+    currentRecordingId.current = uniqueSessionId;
+    dispatch(
+      fetchPresignedUrl({
+        id: uniqueSessionId,
+        file_name: `${uniqueSessionId}.mp4`,
+        file_type: "video/mp4",
+      })
+    );
 
     const startTime = Date.now();
     setRecordingDuration(0);

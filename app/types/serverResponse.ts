@@ -30,3 +30,10 @@ export interface GroupData {
   members: GroupMember[];
   video_chats: VideoChat[];
 }
+
+export interface UploadSignedData {
+  file_uuid: string;
+  url: string;
+  key: string;
+  headers: Record<string, string>;
+}
