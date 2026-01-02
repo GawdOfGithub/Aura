@@ -17,6 +17,7 @@ export interface VideoItem {
   status: UploadStatus;
   retryCount: number;
   createdAt: number;
+  isCompressed: boolean;
   // Server Data
   serverFileUuid?: string;
   uploadUrl?: string;
@@ -47,6 +48,7 @@ const uploadSlice = createSlice({
           status: UploadStatus.PREPARING,
           retryCount: 0,
           createdAt: Date.now(),
+          isCompressed: false
         };
       } else {
         state.entities[id].localUri = uri;
@@ -63,6 +65,13 @@ const uploadSlice = createSlice({
     markUploading: (state, action: PayloadAction<string>) => {
       if (state.entities[action.payload]) {
         state.entities[action.payload].status = UploadStatus.UPLOADING;
+      }
+    },
+    compressionSuccess: (state, action: PayloadAction<{ id: string; newUri: string }>) => {
+      const { id, newUri } = action.payload;
+      if (state.entities[id]) {
+        state.entities[id].localUri = newUri;
+        state.entities[id].isCompressed = true;
       }
     },
     uploadSuccess: (
@@ -107,14 +116,13 @@ const uploadSlice = createSlice({
         const { id } = action.meta.arg;
         const data = action.payload;
 
-        // If entity exists (Video recorded first), update it. If not, create it.
         if (!state.entities[id]) {
           state.entities[id] = {
             id,
-            // localUri is missing
             status: UploadStatus.PREPARING, // Wait for Video
             retryCount: 0,
             createdAt: Date.now(),
+            isCompressed: false,
             serverFileUuid: data.file_uuid,
             uploadUrl: data.url,
             s3Key: data.key,
@@ -142,7 +150,7 @@ const uploadSlice = createSlice({
   },
 });
 
-export const { enqueueVideo, markUploading, uploadSuccess, uploadFailure } =
+export const { enqueueVideo, markUploading, compressionSuccess, uploadSuccess, uploadFailure } =
   uploadSlice.actions;
 
 export const selectNextJobId = (state: RootState) => state.upload.queue[0]; // Peek first item

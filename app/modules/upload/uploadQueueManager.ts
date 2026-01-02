@@ -2,6 +2,7 @@ import { compressVideoNative } from "@/utilities/videoCompressor";
 import BackgroundService from "react-native-background-actions";
 import { store } from "../../store"; // Import your Redux Store instance
 import {
+  compressionSuccess,
   getUploadConfigById,
   markUploading,
   selectItemById,
@@ -17,7 +18,7 @@ class UploadQueueManager {
   private static instance: UploadQueueManager;
   private isRunning: boolean = false;
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): UploadQueueManager {
     if (!UploadQueueManager.instance) {
@@ -68,12 +69,16 @@ class UploadQueueManager {
 
     try {
       store.dispatch(markUploading(jobId));
-
-      // 1. Compress
-      const compressedUri = await compressVideoNative(job.localUri ?? "");
+      let uploadUri = job.localUri ?? "";
+      if (!job.isCompressed) {
+        // 1. Compress
+        const compressedUri = await compressVideoNative(uploadUri);
+        store.dispatch(compressionSuccess({ id: jobId, newUri: compressedUri }));
+        uploadUri = compressedUri
+      }
 
       // 2. Upload
-      const s3Key = await performUpload(compressedUri, config);
+      const s3Key = await performUpload(uploadUri, config);
 
       // 3. Success Dispatch
       store.dispatch(uploadSuccess({ id: jobId, key: s3Key }));

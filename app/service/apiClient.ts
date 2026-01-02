@@ -4,7 +4,7 @@ import axios from "axios";
 
 export const BASE_URL = () => {
   if (__DEV__) {
-    return "https://b31a5552ce54.ngrok-free.app";
+    return "https://houseless-ashley-reflectingly.ngrok-free.dev";
   }
   return "https://cam.dropapp.in";
 };

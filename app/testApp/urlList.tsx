@@ -1,4 +1,4 @@
-const BASE_URL = "https://b31a5552ce54.ngrok-free.app";
+const BASE_URL = "https://houseless-ashley-reflectingly.ngrok-free.dev";
 //export const BASE_URL = "https://cam.dropapp.in";
 
 export const OTPRequestCreateURL = () => {

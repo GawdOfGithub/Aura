@@ -107,6 +107,7 @@ export const SeamlessCamera = ({
         setRecordingDuration(0);
         setIsRecording(false);
         navigation.navigate("VideoPreview", { path: video.path });
+
         // navigation.navigate("VideoPreview", {
         //   path: video.path,
         // });

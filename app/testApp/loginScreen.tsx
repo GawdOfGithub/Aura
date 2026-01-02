@@ -42,6 +42,7 @@ export default function LoginScreen() {
       });
 
       const data = await response.json();
+      console.log(data, "data.......")
 
       // 3. Check for User and Token in response
       if (response.ok && data.user && data.token) {
@@ -58,7 +59,7 @@ export default function LoginScreen() {
         Alert.alert("Login Failed", "User does not exist or invalid response.");
       }
     } catch (error) {
-      console.error(error);
+      console.log(error);
       Alert.alert("Error", "Network request failed.");
     } finally {
       setLoading(false);
