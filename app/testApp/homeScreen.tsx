@@ -13,10 +13,10 @@ import {
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useAppSelector } from "../store/hooks";
+import { selectIsVideoLoading, selectVideosLast24Hours, syncRemoteVideos } from "../store/features/groups/groupPostsSlice";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { SeamlessCamera } from "./cameraSceen"; // Import the file above
 import { VideoBubble } from "./components/videoComponent";
-import { useVideosStorage } from "./contexts";
 import { useGroupData } from "./hooks";
 
 // ----- THIS CHANGED: Enable LayoutAnimation for Android -----
@@ -29,16 +29,17 @@ if (
 
 const { width: WINDOW_WIDTH, height: WINDOW_HEIGHT } = Dimensions.get("window");
 const SMALL_WIDTH = 120;
-const SMALL_HEIGHT = 180;
+const SMALL_HEIGHT = 120;
 const SMALL_BOTTOM = 50;
 // Calculate center position for the small box
 const SMALL_LEFT = (WINDOW_WIDTH - SMALL_WIDTH) / 2;
 
 const TestAppHomeScreen = ({ navigation }: any) => {
+  const dispatch = useAppDispatch()
   const { data: userData } = useAppSelector((state) => state.user);
   const { groupData } = useGroupData();
-  const { getVideosLast24Hours, isLoading, deleteAllVideos, syncRemoteVideos } =
-    useVideosStorage();
+  const isLoading = useAppSelector(selectIsVideoLoading);
+  const recentVideos = useAppSelector(selectVideosLast24Hours);
 
   // 3. The Magic: Sync when groupData arrives
   useEffect(() => {
@@ -48,14 +49,13 @@ const TestAppHomeScreen = ({ navigation }: any) => {
       groupData.video_chats.length > 0
     ) {
       // Pass the video_chats array to the context
-      syncRemoteVideos(groupData.video_chats);
+      dispatch(syncRemoteVideos(groupData.video_chats));
     }
-  }, [groupData, syncRemoteVideos]);
+  }, [groupData]);
 
   // useEffect(() => {
   //   deleteAllVideos();
   // }, []);
-  const recentVideos = getVideosLast24Hours();
   // ----- THIS CHANGED: Track expansion state instead of Open/Closed -----
   const [isCameraExpanded, setIsCameraExpanded] = useState(false);
 
@@ -209,8 +209,7 @@ const styles = StyleSheet.create({
     bottom: SMALL_BOTTOM,
     left: SMALL_LEFT,
     borderRadius: 20,
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.3)",
+
     zIndex: 10,
   },
 

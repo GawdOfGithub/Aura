@@ -3,7 +3,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import { useBackgroundUploadTrigger } from "./hooks/useBackgroundUploadTrigger";
 import { useAppSelector } from "./store/hooks";
-import { VideoStorageProvider } from "./testApp/contexts";
 import HomeScreen from "./testApp/homeScreen";
 import LoginScreen from "./testApp/loginScreen";
 import { VideoPreviewScreen } from "./testApp/videoPreviewScreen";
@@ -17,19 +16,19 @@ export default function AppNavigation() {
   useBackgroundUploadTrigger();
 
   return (
-    <VideoStorageProvider>
-      <NavigationContainer>
-        {!isAuthenticated ? (
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name='Login' component={LoginScreen} />
-          </Stack.Navigator>
-        ) : (
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name='Home' component={HomeScreen} />
-            <Stack.Screen name='VideoPreview' component={VideoPreviewScreen} />
-          </Stack.Navigator>
-        )}
-      </NavigationContainer>
-    </VideoStorageProvider>
+
+    <NavigationContainer>
+      {!isAuthenticated ? (
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name='Login' component={LoginScreen} />
+        </Stack.Navigator>
+      ) : (
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name='Home' component={HomeScreen} />
+          <Stack.Screen name='VideoPreview' component={VideoPreviewScreen} />
+        </Stack.Navigator>
+      )}
+    </NavigationContainer>
+
   );
 }

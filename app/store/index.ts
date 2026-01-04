@@ -11,6 +11,7 @@ import {
   REHYDRATE,
 } from "redux-persist";
 import { injectStore } from "../service/apiClient";
+import videoReducer from "./features/groups/groupPostsSlice";
 import groupReducer from "./features/groups/groupSlice";
 import uploadReducer from "./features/upload/uploadSlice";
 import userReducer from "./features/users/userSlice";
@@ -28,6 +29,7 @@ const rootReducer = combineReducers({
   user: userReducer,
   group: groupReducer,
   upload: uploadReducer,
+  videos: videoReducer
 });
 
 // 3. Create Persisted Reducer

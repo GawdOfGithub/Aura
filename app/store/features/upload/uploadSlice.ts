@@ -152,7 +152,7 @@ const uploadSlice = createSlice({
 
 export const { enqueueVideo, markUploading, compressionSuccess, uploadSuccess, uploadFailure } =
   uploadSlice.actions;
-
+export const getUploadQueue = (state: RootState) => state.upload.queue
 export const selectNextJobId = (state: RootState) => state.upload.queue[0]; // Peek first item
 export const selectItemById = (state: RootState, id: string) =>
   state.upload.entities[id];
@@ -162,6 +162,8 @@ export const getUploadConfigById = (
   id: string
 ): UploadSignedData => {
   const videoItem = state.upload.entities[id];
+  console.log("here is the videoItem", videoItem)
+
   if (
     !videoItem.serverFileUuid ||
     !videoItem.uploadUrl ||
@@ -170,7 +172,7 @@ export const getUploadConfigById = (
   ) {
     throw new Error(`Upload config incomplete for video ${id}`);
   }
-
+  console.log("here is the videoItem", videoItem)
   return {
     file_uuid: videoItem.serverFileUuid,
     url: videoItem.uploadUrl,

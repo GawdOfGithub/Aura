@@ -1,3 +1,4 @@
+import { NavigationProp } from '@react-navigation/native';
 import { nanoid } from "@reduxjs/toolkit";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -11,9 +12,10 @@ import {
   useCameraPermission,
   useMicrophonePermission,
 } from "react-native-vision-camera";
+import uploadQueueManager from '../modules/upload/uploadQueueManager';
+import { enqueueVideo } from '../store/features/upload/uploadSlice';
 import { fetchPresignedUrl } from "../store/features/upload/uploadThunk";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { useVideosStorage } from "./contexts";
 
 // ----- THIS CHANGED: New Props Interface to communicate with Home Screen -----
 type SeamlessCameraProps = {
@@ -21,7 +23,7 @@ type SeamlessCameraProps = {
   onExpand: () => void;
   onClose: () => void;
   onVideoCaptured: (path: string) => void;
-  navigation: any;
+  navigation: NavigationProp<any>;
 };
 
 export const SeamlessCamera = ({
@@ -32,16 +34,15 @@ export const SeamlessCamera = ({
   navigation,
 }: SeamlessCameraProps) => {
   const dispatch = useAppDispatch(); // 1. Get Dispatch
-  const [camPosition, setCamPosition] = useState<CameraPosition>("back");
+  const [camPosition, setCamPosition] = useState<CameraPosition>("front");
   const device = useCameraDevice(camPosition);
-  const { addCapturedVideo } = useVideosStorage();
 
   const { token: userToken, data: userData } = useAppSelector(
     (state) => state.user
   );
   // ----- THIS CHANGED: High quality format for both preview and recording -----
   const cameraFormat = useCameraFormat(device, [
-    { videoResolution: { width: 1280, height: 720 } },
+    { videoResolution: { width: 1280, height: 1280 } },
     { fps: 30 },
   ]);
 
@@ -106,14 +107,16 @@ export const SeamlessCamera = ({
         if (recordingTime.current) clearInterval(recordingTime.current);
         setRecordingDuration(0);
         setIsRecording(false);
-        navigation.navigate("VideoPreview", { path: video.path });
+        //navigation.navigate("VideoPreview", { path: video.path });
 
-        // navigation.navigate("VideoPreview", {
-        //   path: video.path,
-        // });
-        // uploadVideoToS3(video.path, userToken || "");
-        // addCapturedVideo(video.path, userData?.name || "");
-        //  onVideoCaptured(video.path);
+        //Add video to uploader module
+        dispatch(enqueueVideo({
+          id: currentRecordingId.current ? currentRecordingId.current : nanoid(),
+          uri: video.path
+        }))
+        uploadQueueManager.start()
+
+
       },
       onRecordingError: (err) => {
         if (recordingTime.current) clearInterval(recordingTime.current);
@@ -206,17 +209,18 @@ export const SeamlessCamera = ({
   return (
     <GestureDetector gesture={composedGesture}>
       <View style={styles.container}>
-        <Camera
-          ref={camera}
-          style={StyleSheet.absoluteFill}
-          device={device}
-          isActive={true}
-          video={true}
-          audio={true}
-          format={cameraFormat}
-          zoom={zoom}
-        />
-
+        <View style={styles.cameraContainer}>
+          <Camera
+            ref={camera}
+            style={StyleSheet.absoluteFill}
+            device={device}
+            isActive={true}
+            video={true}
+            audio={true}
+            format={cameraFormat}
+            zoom={zoom}
+          />
+        </View>
         {/* ----- THIS CHANGED: Only show overlay when expanded ----- */}
         {isExpanded && (
           <View style={styles.overlay}>
@@ -245,6 +249,11 @@ export const SeamlessCamera = ({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "black" },
+  cameraContainer: {
+    width: 500, height: 500,
+    borderRadius: 10,
+    overflow: "hidden"
+  },
   blackBg: { flex: 1, backgroundColor: "black" },
   overlay: {
     position: "absolute",

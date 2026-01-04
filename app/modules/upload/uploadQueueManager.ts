@@ -1,9 +1,11 @@
+import { measureDuration } from "@/utilities/measureDuration"; // Import the utility
 import { compressVideoNative } from "@/utilities/videoCompressor";
 import BackgroundService from "react-native-background-actions";
 import { store } from "../../store"; // Import your Redux Store instance
 import {
   compressionSuccess,
   getUploadConfigById,
+  getUploadQueue,
   markUploading,
   selectItemById,
   selectNextJobId,
@@ -32,13 +34,14 @@ class UploadQueueManager {
    * This function runs inside the Background Service.
    */
   private backgroundTask = async (taskDataArguments?: any) => {
-    console.log("[UploadQueue] Service Started");
+    console.log("[UploadQueue] Service Started", BackgroundService.isRunning());
 
     // LOOP: Run as long as the service is allowed by OS
     while (BackgroundService.isRunning()) {
       const state = store.getState();
+      const queue = getUploadQueue(state);
       const nextJobId = selectNextJobId(state);
-
+      console.log("starting upload of jobID", queue, nextJobId)
       // A. If Queue is Empty -> Kill Service
       if (!nextJobId) {
         console.log("[UploadQueue] Queue empty. Stopping service.");
@@ -61,10 +64,13 @@ class UploadQueueManager {
    * Processes a single video upload
    */
   private processJob = async (jobId: string) => {
+
     const state = store.getState();
     const job = selectItemById(state, jobId);
-    const config = getUploadConfigById(state, jobId);
+    console.log("process upload of job id ", job)
 
+    const config = getUploadConfigById(state, jobId);
+    console.log("process upload of job ", job, config)
     if (!job || !config) return;
 
     try {
@@ -72,13 +78,22 @@ class UploadQueueManager {
       let uploadUri = job.localUri ?? "";
       if (!job.isCompressed) {
         // 1. Compress
-        const compressedUri = await compressVideoNative(uploadUri);
+        const { result: compressedUri, durationMs: compTime } = await measureDuration(() =>
+          compressVideoNative(uploadUri)
+        );
+
+        console.log(`[UploadQueue] Compression took: ${compTime}ms`);
+        // const compressedUri = await compressVideoNative(uploadUri);
         store.dispatch(compressionSuccess({ id: jobId, newUri: compressedUri }));
         uploadUri = compressedUri
       }
 
       // 2. Upload
-      const s3Key = await performUpload(uploadUri, config);
+      const { result: s3Key, durationMs: uploadTime } = await measureDuration<string>(() =>
+        performUpload(uploadUri, config)
+      );
+      console.log(`[UploadQueue] Upload took: ${uploadTime}ms`);
+      // const s3Key = await performUpload(uploadUri, config);
 
       // 3. Success Dispatch
       store.dispatch(uploadSuccess({ id: jobId, key: s3Key }));
@@ -100,7 +115,7 @@ class UploadQueueManager {
 
     const state = store.getState();
     const queueLen = state.upload.queue.length;
-
+    console.log(queueLen)
     if (queueLen === 0) return; // Nothing to do
 
     this.isRunning = true;
@@ -114,12 +129,14 @@ class UploadQueueManager {
         type: "mipmap",
       },
       color: "#ff00ff",
+      linkingURI: 'ab-uipl-app://',
       parameters: {
         delay: 1000,
       },
     };
 
     try {
+      console.log("starting background server")
       await BackgroundService.start(this.backgroundTask, options);
     } catch (e) {
       console.log("Error starting background service", e);
