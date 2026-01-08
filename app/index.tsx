@@ -16,7 +16,6 @@ export default function AppNavigation() {
   useBackgroundUploadTrigger();
 
   return (
-
     <NavigationContainer>
       {!isAuthenticated ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -29,6 +28,5 @@ export default function AppNavigation() {
         </Stack.Navigator>
       )}
     </NavigationContainer>
-
   );
 }

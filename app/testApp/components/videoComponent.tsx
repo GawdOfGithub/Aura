@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   fullVideo: {
     width: width,
-    height: height,
+    height: width,
   },
   closeButton: {
     position: "absolute",

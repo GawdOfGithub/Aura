@@ -40,13 +40,12 @@
       "package": "com.uipl.videocamerachat"
     },
     "web": {
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      [
-        "./plugins/backgroundActions.js"
-      ],
+      "./plugins/backgroundActions.js",
+      "./plugins/withMergedMlKitDependencies.js",
       "react-native-compressor",
       [
         "react-native-vision-camera",
