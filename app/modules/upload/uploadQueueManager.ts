@@ -1,7 +1,8 @@
-import { measureDuration } from "@/utilities/measureDuration"; // Import the utility
+import { handleUploadCompletion } from "@/app/store/features/upload/uploadThunk";
+import { measureDuration } from "@/utilities/measureDuration";
 import { compressVideoNative } from "@/utilities/videoCompressor";
 import BackgroundService from "react-native-background-actions";
-import { store } from "../../store"; // Import your Redux Store instance
+import { store } from "../../store";
 import {
   compressionSuccess,
   getUploadConfigById,
@@ -14,7 +15,7 @@ import {
 } from "../../store/features/upload/uploadSlice";
 import { performUpload } from "./uploadService";
 
-const SLEEP_DELAY = 1000; // 1 second
+const SLEEP_DELAY = 1000;
 
 class UploadQueueManager {
   private static instance: UploadQueueManager;
@@ -30,7 +31,6 @@ class UploadQueueManager {
   }
 
   /**
-   * The "Brain" of the operation.
    * This function runs inside the Background Service.
    */
   private backgroundTask = async (taskDataArguments?: any) => {
@@ -72,7 +72,7 @@ class UploadQueueManager {
     const config = getUploadConfigById(state, jobId);
     console.log("process upload of job ", job, config)
     if (!job || !config) return;
-
+    if (!job.localUri) return;
     try {
       store.dispatch(markUploading(jobId));
       let uploadUri = job.localUri ?? "";
@@ -97,6 +97,10 @@ class UploadQueueManager {
 
       // 3. Success Dispatch
       store.dispatch(uploadSuccess({ id: jobId, key: s3Key }));
+      store.dispatch(handleUploadCompletion({
+        localPath: job.localUri,
+        fileKeyPath: s3Key
+      }))
       console.log(`[UploadQueue] Job ${jobId} Success`);
     } catch (error) {
       console.error(`[UploadQueue] Job ${jobId} Failed`, error);

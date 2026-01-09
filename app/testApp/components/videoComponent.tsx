@@ -35,28 +35,24 @@ export const VideoBubble = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
-  // 1. Setup expo-video player
   const player = useVideoPlayer(videoUri, (p) => {
-    p.loop = false; // Disable loop so we can detect "End"
-    p.muted = true; // Start muted in bubble
+    p.loop = false;
+    p.muted = true;
   });
 
-  // 2. Animation Values for Bubble
   const floatValue = useSharedValue(0);
-  const translateY = useSharedValue(0); // For swipe gesture
+  const translateY = useSharedValue(0);
 
   useEffect(() => {
-    // Continuous floating animation for the bubble
     floatValue.value = withRepeat(
       withSequence(
         withTiming(-10, { duration: 2000 }),
         withTiming(0, { duration: 2000 })
       ),
-      -10, // Infinite
+      -10,
       true
     );
 
-    // Auto-close when video finishes
     const subscription = player.addListener("playToEnd", () => {
       closeModal();
     });
@@ -67,7 +63,7 @@ export const VideoBubble = ({
   const openModal = () => {
     setIsVisible(true);
     player.muted = false;
-    player.currentTime = 0; // Restart video
+    player.currentTime = 0;
     player.play();
   };
 
@@ -75,28 +71,23 @@ export const VideoBubble = ({
     player.pause();
     player.muted = true;
     setIsVisible(false);
-    translateY.value = 0; // Reset swipe position
+    translateY.value = 0;
   };
 
-  // 3. Swipe Down Gesture Logic
   const panGesture = Gesture.Pan()
     .onUpdate((e) => {
-      // Only allow dragging downwards
       if (e.translationY > 0) {
         translateY.value = e.translationY;
       }
     })
     .onEnd((e) => {
       if (e.translationY > 150) {
-        // If swiped down enough, close it
         runOnJS(closeModal)();
       } else {
-        // Otherwise bounce back up
         translateY.value = withSpring(0);
       }
     });
 
-  // Styles
   const animatedBubbleStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: floatValue.value }],
   }));
@@ -107,10 +98,9 @@ export const VideoBubble = ({
 
   return (
     <View style={styles.wrapper}>
-      {/* --- BUBBLE VIEW --- */}
       <Pressable
         style={{ alignItems: "center" }}
-        onPress={openModal} // Changed to single tap
+        onPress={openModal}
       >
         <Animated.View style={[styles.bubble, animatedBubbleStyle]}>
           <VideoView
@@ -123,15 +113,12 @@ export const VideoBubble = ({
         <Text style={styles.username}>{videoCreatedBy}</Text>
       </Pressable>
 
-      {/* --- FULL SCREEN MODAL --- */}
       <Modal visible={isVisible} transparent animationType='fade'>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <GestureDetector gesture={panGesture}>
             <Animated.View style={[styles.fullScreen, animatedModalStyle]}>
-              {/* Black Background */}
               <View style={styles.blackBackdrop} />
 
-              {/* Video Player */}
               <VideoView
                 player={player}
                 style={styles.fullVideo}
@@ -139,7 +126,6 @@ export const VideoBubble = ({
                 nativeControls={false}
               />
 
-              {/* Close Button (X) */}
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={closeModal}
@@ -178,7 +164,6 @@ const styles = StyleSheet.create({
   },
   video: { width: "100%", height: "100%" },
 
-  // Modal Styles
   fullScreen: {
     flex: 1,
     justifyContent: "center",
@@ -209,6 +194,15 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 20,
     fontWeight: "bold",
-    lineHeight: 24, // Centers the X vertically on some fonts
+    lineHeight: 24,
   },
 });
+
+
+
+
+
+
+
+
+

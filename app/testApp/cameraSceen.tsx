@@ -209,7 +209,7 @@ export const SeamlessCamera = ({
   return (
     <GestureDetector gesture={composedGesture}>
       <View style={styles.container}>
-        <View style={styles.cameraContainer}>
+        <View style={[styles.cameraContainer,isExpanded?{width:500,height:500}:{height:"100%",width:"100%"}]}>
           <Camera
             ref={camera}
             style={StyleSheet.absoluteFill}
@@ -250,7 +250,6 @@ export const SeamlessCamera = ({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "black" },
   cameraContainer: {
-    width: 500, height: 500,
     borderRadius: 10,
     overflow: "hidden"
   },

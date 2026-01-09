@@ -37,3 +37,8 @@ export interface UploadSignedData {
   key: string;
   headers: Record<string, string>;
 }
+
+export interface SendVideoResponse {
+  video_chat_id: string;
+  file_path: string;
+}

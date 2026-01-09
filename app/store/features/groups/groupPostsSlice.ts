@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit";
 import * as FileSystem from "expo-file-system/legacy";
 import { VideoChat } from "../../../types/serverResponse"; // Import your types
 import { RootState } from "../../index"; // Import your store's RootState type
@@ -82,20 +82,18 @@ export const initializeVideos = createAsyncThunk(
     }
 );
 
-/**
- * 2. Add Video: Moves temp file to permanent storage and saves metadata.
- */
 export const addCapturedVideo = createAsyncThunk(
     "videos/add",
     async (
-        payload: { tempPath: string; userId: string },
+        payload: { tempPath: string; videoChatID: string },
         { getState, rejectWithValue }
     ) => {
         try {
-            const { tempPath, userId } = payload;
+            const { tempPath, videoChatID } = payload;
             const fileName = tempPath.split("/").pop();
             if (!fileName) throw new Error("Invalid filename");
-
+            const state = getState() as RootState;
+            let selfUserID = state.user.data ? state.user.data.id : ""
             const permanentPath = `${FileSystem.documentDirectory}${fileName}`;
 
             // Copy file to permanent location
@@ -109,14 +107,14 @@ export const addCapturedVideo = createAsyncThunk(
             }
 
             const newVideo: VideoMetadata = {
-                id: `temp_${Date.now()}`,
+                id: videoChatID,
                 videoCapturedAt: new Date().toISOString(),
-                videoCapturedBy: userId,
+                videoCapturedBy: selfUserID,
                 videoFilePath: permanentPath,
             };
 
             // Get current list to update AsyncStorage
-            const state = getState() as RootState;
+
             const currentVideos = state.videos.videos;
             const updatedList = [newVideo, ...currentVideos];
 
@@ -276,10 +274,14 @@ export const selectAllVideos = (state: RootState) => state.videos.videos;
 export const selectIsVideoLoading = (state: RootState) => state.videos.isLoading;
 
 // Memoized selector for last 24h
-export const selectVideosLast24Hours = (state: RootState) => {
-    const videos = state.videos.videos;
-    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
-    return videos.filter(
-        (v) => new Date(v.videoCapturedAt).getTime() > twentyFourHoursAgo
-    );
-};
+export const selectVideosLast24Hours = createSelector(
+    [selectAllVideos], // Input selectors
+    (videos) => {
+        // This calculation only runs if 'videos' has changed
+        const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+
+        return videos.filter(
+            (v) => new Date(v.videoCapturedAt).getTime() > twentyFourHoursAgo
+        );
+    }
+);
