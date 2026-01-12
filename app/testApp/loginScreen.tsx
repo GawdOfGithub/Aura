@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { login } from "../store/features/users/userSlice";
 import { useAppDispatch } from "../store/hooks";

@@ -1,6 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { combineReducers, configureStore } from "@reduxjs/toolkit";
+import { combineReducers, configureStore, Middleware } from "@reduxjs/toolkit";
 import {
+  createTransform,
   FLUSH,
   PAUSE,
   PERSIST,
@@ -11,25 +11,55 @@ import {
   REHYDRATE,
 } from "redux-persist";
 import { injectStore } from "../service/apiClient";
+import { mmkvReduxStorage } from "../storage/mmkvStorage";
+import { api } from "./apiSlice";
 import videoReducer from "./features/groups/groupPostsSlice";
 import groupReducer from "./features/groups/groupSlice";
 import uploadReducer from "./features/upload/uploadSlice";
 import userReducer from "./features/users/userSlice";
+const PERSISTED_QUERY_PREFIXES = ["getGroupInfo"];
 
-// 1. Persist Config
+const apiTransform = createTransform(
+
+  (inboundState: any) => {
+    if (!inboundState?.queries) return inboundState;
+
+    const filteredQueries: any = {};
+    Object.keys(inboundState.queries).forEach((key) => {
+      const shouldPersist = PERSISTED_QUERY_PREFIXES.some((prefix) =>
+        key.startsWith(prefix)
+      );
+
+      if (shouldPersist) {
+        filteredQueries[key] = inboundState.queries[key];
+      }
+    });
+
+    return {
+      ...inboundState,
+      queries: filteredQueries,
+      mutations: {}, 
+      subscriptions: {}, 
+    };
+  },
+ 
+  (outboundState: any) => outboundState,
+  { whitelist: ["api"] } 
+);
+
 const persistConfig = {
   key: "root",
-  storage: AsyncStorage,
-  whitelist: ["user"], // Things you want to save
-  // blacklist: ['somethingTemporary'], // Things you DON'T want to save
+  storage: mmkvReduxStorage,
+  whitelist: ["user", "api"], 
+  transforms: [apiTransform],
 };
 
-// 2. Combine Reducers
 const rootReducer = combineReducers({
   user: userReducer,
   group: groupReducer,
   upload: uploadReducer,
-  videos: videoReducer
+  videos: videoReducer,
+  [api.reducerPath]: api.reducer,
 });
 
 // 3. Create Persisted Reducer
@@ -43,7 +73,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }),
+    }).concat(api.middleware as Middleware),
 });
 
 injectStore(store);

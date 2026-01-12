@@ -1,17 +1,17 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ActivityIndicator } from "react-native";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import AppNavigation from "./app/index";
+import { mmkvStorage } from "./app/storage/mmkvStorage";
 import { persistor, store } from "./app/store";
 
-const clearAuthStorage = async () => {
+const clearAuthStorage = () => {
   try {
-    await AsyncStorage.removeItem("userToken");
-    await AsyncStorage.removeItem("userData");
-    console.log("AsyncStorage: Token and User Data successfully removed.");
+    mmkvStorage.remove("userToken");
+    mmkvStorage.remove("userData");
+    console.log("MMKV: Token and User Data successfully removed.");
   } catch (e) {
-    console.error("AsyncStorage: Failed to remove items", e);
+    console.error("MMKV: Failed to remove items", e);
   }
 };
 
@@ -32,3 +32,7 @@ const App = () => {
 };
 
 export default App;
+
+
+
+

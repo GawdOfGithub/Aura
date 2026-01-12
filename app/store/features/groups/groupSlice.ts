@@ -4,7 +4,6 @@ import { GroupData } from "@/app/types";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { logout } from "../users/userSlice";
 
-// 1. Define State Shape
 interface GroupState {
   data: GroupData | null;
   loading: boolean;
@@ -68,6 +67,5 @@ const groupSlice = createSlice({
   },
 });
 
-// Export Actions & Reducer
 export const { clearGroupData } = groupSlice.actions;
 export default groupSlice.reducer;

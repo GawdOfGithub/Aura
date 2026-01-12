@@ -1,8 +1,8 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit";
 import * as FileSystem from "expo-file-system/legacy";
 import { VideoChat } from "../../../types/serverResponse"; // Import your types
 import { RootState } from "../../index"; // Import your store's RootState type
+import { mmkvStorage } from "../../../storage/mmkvStorage";
 
 // --- Configuration ---
 const STORAGE_KEY = "@captured_videos_metadata";
@@ -28,16 +28,12 @@ const initialState: VideoState = {
     error: null,
 };
 
-// --- Thunks ---
 
-/**
- * 1. Initialize: Loads from AsyncStorage, deletes expired files from disk, updates state.
- */
 export const initializeVideos = createAsyncThunk(
     "videos/initialize",
     async (_, { rejectWithValue }) => {
         try {
-            const saved = await AsyncStorage.getItem(STORAGE_KEY);
+            const saved = mmkvStorage.getString(STORAGE_KEY);
             if (!saved) return [];
 
             const parsedVideos: VideoMetadata[] = JSON.parse(saved);
@@ -68,7 +64,7 @@ export const initializeVideos = createAsyncThunk(
                     })
                 );
                 // Update Storage immediately with cleaned list
-                await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(validVideos));
+                mmkvStorage.set(STORAGE_KEY, JSON.stringify(validVideos));
             }
 
             // Return sorted list
@@ -113,12 +109,11 @@ export const addCapturedVideo = createAsyncThunk(
                 videoFilePath: permanentPath,
             };
 
-            // Get current list to update AsyncStorage
 
             const currentVideos = state.videos.videos;
             const updatedList = [newVideo, ...currentVideos];
 
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
+            mmkvStorage.set(STORAGE_KEY, JSON.stringify(updatedList));
 
             return newVideo;
         } catch (error: any) {
@@ -184,7 +179,7 @@ export const syncRemoteVideos = createAsyncThunk(
                 const updatedList = [...newVideosToAdd, ...localVideos].sort(
                     (a, b) => new Date(b.videoCapturedAt).getTime() - new Date(a.videoCapturedAt).getTime()
                 );
-                await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
+                mmkvStorage.set(STORAGE_KEY, JSON.stringify(updatedList));
             }
 
             return newVideosToAdd;
@@ -217,7 +212,7 @@ export const deleteAllVideos = createAsyncThunk(
                 })
             );
 
-            await AsyncStorage.removeItem(STORAGE_KEY);
+            mmkvStorage.remove(STORAGE_KEY);
             return [];
         } catch (error: any) {
             return rejectWithValue(error.message);
@@ -285,3 +280,5 @@ export const selectVideosLast24Hours = createSelector(
         );
     }
 );
+
+

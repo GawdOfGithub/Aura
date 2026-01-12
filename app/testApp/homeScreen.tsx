@@ -24,13 +24,13 @@ import {
   selectVideosLast24Hours,
   syncRemoteVideos,
 } from "../store/features/groups/groupPostsSlice";
+import { useGetGroupInfoQuery } from "../store/features/groups/groupsApi";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { SeamlessCamera } from "./cameraSceen";
 import {
   VideoBubbleCarousel,
   VideoItem,
 } from "./components/VideoBubbleCarousel";
-import { useGroupData } from "./hooks";
 
 // Enable LayoutAnimation for Android
 if (
@@ -92,7 +92,10 @@ const TEST_VIDEOS = generateTestVideos();
 const TestAppHomeScreen = ({ navigation }: any) => {
   const dispatch = useAppDispatch();
   const { data: userData } = useAppSelector((state) => state.user);
-  const { groupData } = useGroupData();
+  
+  // Direct usage of RTK Query hook
+  const { data: groupData } = useGetGroupInfoQuery();
+
   const isLoading = useAppSelector(selectIsVideoLoading);
   const recentVideos = useAppSelector(selectVideosLast24Hours);
 
