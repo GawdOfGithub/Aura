@@ -63,7 +63,7 @@ const rootReducer = combineReducers({
 });
 
 // 3. Create Persisted Reducer
-const persistedReducer = persistReducer(persistConfig, rootReducer);
+const persistedReducer = persistReducer<RootState>(persistConfig, rootReducer);
 
 // 4. Configure Store
 export const store = configureStore({
@@ -80,5 +80,5 @@ injectStore(store);
 export const persistor = persistStore(store);
 
 // Types
-export type RootState = ReturnType<typeof store.getState>;
+export type RootState = ReturnType<typeof rootReducer>;
 export type AppDispatch = typeof store.dispatch;

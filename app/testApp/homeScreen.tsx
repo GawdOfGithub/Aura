@@ -1,24 +1,18 @@
-import { useVideoPlayer, VideoView } from "expo-video";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Dimensions,
   Image,
   LayoutAnimation,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   UIManager,
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import VideoWaveform from "../components/audio/audioWaveform";
+import { useFileFromAsset } from "../hooks/useFileFromAsset";
 import {
   selectIsVideoLoading,
   selectVideosLast24Hours,
@@ -27,11 +21,6 @@ import {
 import { useGetGroupInfoQuery } from "../store/features/groups/groupsApi";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { SeamlessCamera } from "./cameraSceen";
-import {
-  VideoBubbleCarousel,
-  VideoItem,
-} from "./components/VideoBubbleCarousel";
-
 // Enable LayoutAnimation for Android
 if (
   Platform.OS === "android" &&
@@ -39,103 +28,21 @@ if (
 ) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-
 const { width: WINDOW_WIDTH, height: WINDOW_HEIGHT } = Dimensions.get("window");
 const SMALL_WIDTH = 90;
 const SMALL_HEIGHT = 90;
 const SMALL_BOTTOM = 25;
 const SMALL_LEFT = (WINDOW_WIDTH - SMALL_WIDTH) / 2;
 
-// Main Video Player Height
-const VIDEO_PLAYER_HEIGHT = WINDOW_HEIGHT * 0.42;
-
-// TEST DATA - 5 real videos + 25 empty placeholders = 30 total
-const TEST_VIDEO_SOURCE = require("../../assets/jayshankar.mp4");
-
-const generateTestVideos = (): VideoItem[] => {
-  const videos: VideoItem[] = [];
-
-  // First 5 with actual video content
-  const names = ["Jay Shankar", "Anurag", "Shashank", "Rahul", "Priya"];
-  for (let i = 0; i < 5; i++) {
-    videos.push({
-      id: `video-${i}`,
-      videoUri: TEST_VIDEO_SOURCE,
-      createdBy: names[i],
-      isEmpty: false,
-    });
-  }
-
-  // Next 25 empty placeholders
-  const emptyNames = [
-    "User 6", "User 7", "User 8", "User 9", "User 10",
-    "User 11", "User 12", "User 13", "User 14", "User 15",
-    "User 16", "User 17", "User 18", "User 19", "User 20",
-    "User 21", "User 22", "User 23", "User 24", "User 25",
-    "User 26", "User 27", "User 28", "User 29", "User 30",
-  ];
-  for (let i = 0; i < 25; i++) {
-    videos.push({
-      id: `empty-${i}`,
-      videoUri: null,
-      createdBy: emptyNames[i],
-      isEmpty: true,
-    });
-  }
-
-  return videos;
-};
-
-// Generate once outside component
-const TEST_VIDEOS = generateTestVideos();
-
 const TestAppHomeScreen = ({ navigation }: any) => {
   const dispatch = useAppDispatch();
   const { data: userData } = useAppSelector((state) => state.user);
-  
+
   // Direct usage of RTK Query hook
   const { data: groupData } = useGetGroupInfoQuery();
 
   const isLoading = useAppSelector(selectIsVideoLoading);
   const recentVideos = useAppSelector(selectVideosLast24Hours);
-
-  // Active video index
-  const [activeIndex, setActiveIndex] = useState(0);
-  const activeVideo = TEST_VIDEOS[activeIndex];
-
-  // Track if this is the first render
-  const isFirstRender = useRef(true);
-
-  // Main video player - only play if video has content
-  const player = useVideoPlayer(
-    activeVideo?.isEmpty ? null : TEST_VIDEO_SOURCE,
-    (p) => {
-      p.loop = false;
-      p.muted = true;
-      p.volume = 1;
-      if (!activeVideo?.isEmpty) {
-        p.play();
-      }
-    }
-  );
-
-  // Update player when active video changes
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-
-    if (player) {
-      if (activeVideo?.isEmpty) {
-        player.pause();
-      } else {
-        player.currentTime = 0;
-        player.play();
-      }
-
-    }
-  }, [activeIndex]);
 
   // Sync remote videos
   useEffect(() => {
@@ -154,44 +61,32 @@ const TestAppHomeScreen = ({ navigation }: any) => {
   const handleExpand = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsCameraExpanded(true);
-    player?.pause();
-  }, [player]);
+  }, []);
 
   const handleClose = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsCameraExpanded(false);
-    if (!activeVideo?.isEmpty) {
-      player?.play();
-    }
-  }, [player, activeVideo]);
-
-  const handleVideoCaptured = useCallback((path: string) => {
-    console.log("Video captured at:", path);
-    handleClose();
-  }, [handleClose]);
-
-  // Handle active index change from carousel
-  const handleActiveIndexChange = useCallback((index: number) => {
-    setActiveIndex(index);
   }, []);
 
-  // Video tap animation
-  const videoScale = useSharedValue(1);
-  const handleVideoPress = useCallback(() => {
-    videoScale.value = withSpring(0.97, { damping: 15 });
-    setTimeout(() => {
-      videoScale.value = withSpring(1, { damping: 15 });
-    }, 100);
-  }, []);
+  const handleVideoCaptured = useCallback(
+    (path: string) => {
+      console.log("Video captured at:", path);
+      handleClose();
+    },
+    [handleClose]
+  );
 
-  const videoAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: videoScale.value }],
-  }));
+  const videoSource =
+    "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4";
+
+  const localUri2 = useFileFromAsset(
+    require("../../assets/jayshankar.mp4"),
+    "sample3.mp4"
+  );
 
   return (
     <SafeAreaProvider style={styles.safeArea}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        {/* Header */}
         <View style={styles.header}>
           <View style={{ width: 40 }} />
           <Text style={styles.headerTitle}>Buzz</Text>
@@ -202,86 +97,32 @@ const TestAppHomeScreen = ({ navigation }: any) => {
                 style={styles.avatar}
               />
             ) : (
-              <View
-                style={[styles.avatar, { backgroundColor: "#333" }]}
-              />
+              <View style={[styles.avatar, { backgroundColor: "#333" }]} />
             )}
           </View>
         </View>
 
-        {/* Main Content */}
         <View style={styles.content}>
-          {/* Group Title */}
           <Text style={styles.groupTitle}>
             {groupData?.group_name || "Group 1"}
           </Text>
-
-          {/* Main Video Player */}
-          <Pressable onPress={handleVideoPress}>
-            <Animated.View
-              style={[styles.mainVideoContainer, videoAnimatedStyle]}
-            >
-              {activeVideo && !activeVideo.isEmpty ? (
-                <>
-                  <VideoView
-                    player={player}
-                    style={styles.mainVideo}
-                    contentFit="cover"
-                    nativeControls={false}
-                  />
-                  {/* Video Info Overlay */}
-                  <View style={styles.videoInfoOverlay}>
-                    <View style={styles.videoInfoPill}>
-                      <Text style={styles.videoInfoText}>
-                        📹 {activeVideo.createdBy}
-                      </Text>
-                    </View>
-                    <View style={styles.videoCountPill}>
-                      <Text style={styles.videoCountText}>
-                        {activeIndex + 1} / {TEST_VIDEOS.length}
-                      </Text>
-                    </View>
-                  </View>
-                </>
-              ) : (
-                <View style={styles.emptyVideoPlaceholder}>
-                  <Text style={styles.emptyVideoEmoji}>👤</Text>
-                  <Text style={styles.emptyVideoText}>
-                    {activeVideo?.createdBy || "No video"}
-                  </Text>
-                  <Text style={styles.emptyVideoSubtext}>
-                    No video available
-                  </Text>
-                </View>
-              )}
-            </Animated.View>
-          </Pressable>
-
-          {/* Video Bubble Carousel */}
-          <View style={styles.carouselSection}>
-            <VideoBubbleCarousel
-              videos={TEST_VIDEOS}
-              activeIndex={activeIndex}
-              onActiveIndexChange={handleActiveIndexChange}
-            />
-          </View>
-
-          {isLoading && (
-            <ActivityIndicator
-              size={"large"}
-              color={"#fff"}
-              style={{ marginTop: 20 }}
+          {localUri2 && (
+            <VideoWaveform
+              source={localUri2}
+              style={{
+                width: 142,
+                backgroundColor: "#FFFFFF2B",
+                paddingHorizontal: 10,
+                borderRadius: 48,
+              }}
             />
           )}
         </View>
 
-        {/* Camera Preview */}
         <View
           style={[
             styles.cameraWrapper,
-            isCameraExpanded
-              ? styles.cameraFullScreen
-              : styles.cameraSmall,
+            isCameraExpanded ? styles.cameraFullScreen : styles.cameraSmall,
           ]}
         >
           <SeamlessCamera
@@ -348,82 +189,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginLeft: 4,
   },
-  // Main Video Player
-  mainVideoContainer: {
-    width: "100%",
-    height: VIDEO_PLAYER_HEIGHT,
-    borderRadius: 18,
-    overflow: "hidden",
-    backgroundColor: "#111",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.6,
-    shadowRadius: 15,
-    elevation: 12,
-  },
-  mainVideo: {
-    width: "100%",
-    height: "100%",
-  },
-  videoInfoOverlay: {
-    position: "absolute",
-    bottom: 12,
-    left: 12,
-    right: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  videoInfoPill: {
-    backgroundColor: "rgba(0,0,0,0.7)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  videoInfoText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  videoCountPill: {
-    backgroundColor: "rgba(255,255,255,0.15)",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  videoCountText: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  emptyVideoPlaceholder: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#151515",
-  },
-  emptyVideoEmoji: {
-    fontSize: 50,
-    opacity: 0.3,
-    marginBottom: 12,
-  },
-  emptyVideoText: {
-    color: "#555",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  emptyVideoSubtext: {
-    color: "#333",
-    fontSize: 13,
-    marginTop: 4,
-  },
-  // Carousel Section
-  carouselSection: {
-    marginTop: 40,
-    flex: 1,
-    overflow: "visible",
-  },
-
 
   // Camera Styles
   cameraWrapper: {

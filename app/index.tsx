@@ -19,12 +19,12 @@ export default function AppNavigation() {
     <NavigationContainer>
       {!isAuthenticated ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name='Login' component={LoginScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
         </Stack.Navigator>
       ) : (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name='Home' component={HomeScreen} />
-          <Stack.Screen name='VideoPreview' component={VideoPreviewScreen} />
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="VideoPreview" component={VideoPreviewScreen} />
         </Stack.Navigator>
       )}
     </NavigationContainer>
