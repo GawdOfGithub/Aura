@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { login } from "../store/features/users/userSlice";
 import { useAppDispatch } from "../store/hooks";
@@ -42,7 +42,7 @@ export default function LoginScreen() {
       });
 
       const data = await response.json();
-      console.log(data, "data.......")
+      console.log(data, "data.......");
 
       // 3. Check for User and Token in response
       if (response.ok && data.user && data.token) {
@@ -70,7 +70,8 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardView}>
+        style={styles.keyboardView}
+      >
         <View style={styles.headerContainer}>
           <Text style={styles.appName}>Buzz</Text>
           <Text style={styles.subHeader}>Welcome Back!</Text>
@@ -80,9 +81,9 @@ export default function LoginScreen() {
           <Text style={styles.label}>Mobile Number</Text>
           <TextInput
             style={styles.input}
-            placeholder='9876543210'
-            placeholderTextColor='#aaa'
-            keyboardType='number-pad'
+            placeholder="9876543210"
+            placeholderTextColor="#aaa"
+            keyboardType="number-pad"
             maxLength={10}
             value={phoneNumber}
             onChangeText={setPhoneNumber}
@@ -92,9 +93,10 @@ export default function LoginScreen() {
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleLogin}
-            disabled={loading}>
+            disabled={loading}
+          >
             {loading ? (
-              <ActivityIndicator color='#fff' />
+              <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.buttonText}>Login</Text>
             )}

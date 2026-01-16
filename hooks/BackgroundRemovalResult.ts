@@ -45,4 +45,3 @@ export const useBackgroundRemoval = (imageUri: string | null): BackgroundRemoval
 };
 
 export default useBackgroundRemoval;
-

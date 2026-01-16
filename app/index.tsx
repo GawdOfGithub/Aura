@@ -2,18 +2,19 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import { useBackgroundUploadTrigger } from "./hooks/useBackgroundUploadTrigger";
+import HomeScreen from "./screens/HomeScreen";
 import ConsumptionScreen from "./screens/consumption";
 import { useAppSelector } from "./store/hooks";
-import HomeScreen from "./testApp/homeScreen";
 import LoginScreen from "./testApp/loginScreen";
 import { VideoPreviewScreen } from "./testApp/videoPreviewScreen";
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigation() {
-  const { isAuthenticated } = useAppSelector((state) => state.user);
+  const isAuthenticated = useAppSelector(
+    (state) => state.user?.isAuthenticated,
+  );
 
-  // INIT PROCESSES(Hooks)
   useBackgroundUploadTrigger();
 
   return (
@@ -24,7 +25,11 @@ export default function AppNavigation() {
         </Stack.Navigator>
       ) : (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Home">
+            {(props) => (
+              <HomeScreen {...props} initialIndex={0} />
+            )}
+          </Stack.Screen>
           <Stack.Screen name="Consumption" component={ConsumptionScreen} />
           <Stack.Screen name="VideoPreview" component={VideoPreviewScreen} />
         </Stack.Navigator>

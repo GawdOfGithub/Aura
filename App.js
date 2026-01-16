@@ -23,8 +23,9 @@ const App = () => {
   return (
     <Provider store={store}>
       <PersistGate
-        loading={<ActivityIndicator size='large' />}
-        persistor={persistor}>
+        loading={<ActivityIndicator size="large" />}
+        persistor={persistor}
+      >
         <AppNavigation />
       </PersistGate>
     </Provider>
@@ -32,7 +33,3 @@ const App = () => {
 };
 
 export default App;
-
-
-
-

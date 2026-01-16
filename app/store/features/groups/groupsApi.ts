@@ -22,4 +22,3 @@ export const groupsApi = api.injectEndpoints({
 });
 
 export const { useGetGroupInfoQuery, useLazyGetGroupInfoQuery, useUpdateGroupMutation } = groupsApi;
-

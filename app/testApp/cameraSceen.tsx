@@ -1,4 +1,4 @@
-import { NavigationProp } from '@react-navigation/native';
+import { NavigationProp } from "@react-navigation/native";
 import { nanoid } from "@reduxjs/toolkit";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -12,8 +12,8 @@ import {
   useCameraPermission,
   useMicrophonePermission,
 } from "react-native-vision-camera";
-import uploadQueueManager from '../modules/upload/uploadQueueManager';
-import { enqueueVideo } from '../store/features/upload/uploadSlice';
+import uploadQueueManager from "../modules/upload/uploadQueueManager";
+import { enqueueVideo } from "../store/features/upload/uploadSlice";
 import { fetchPresignedUrl } from "../store/features/upload/uploadThunk";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 
@@ -110,13 +110,15 @@ export const SeamlessCamera = ({
         //navigation.navigate("VideoPreview", { path: video.path });
 
         //Add video to uploader module
-        dispatch(enqueueVideo({
-          id: currentRecordingId.current ? currentRecordingId.current : nanoid(),
-          uri: video.path
-        }))
-        uploadQueueManager.start()
-
-
+        dispatch(
+          enqueueVideo({
+            id: currentRecordingId.current
+              ? currentRecordingId.current
+              : nanoid(),
+            uri: video.path,
+          })
+        );
+        uploadQueueManager.start();
       },
       onRecordingError: (err) => {
         if (recordingTime.current) clearInterval(recordingTime.current);
@@ -209,7 +211,14 @@ export const SeamlessCamera = ({
   return (
     <GestureDetector gesture={composedGesture}>
       <View style={styles.container}>
-        <View style={[styles.cameraContainer,isExpanded?{width:500,height:500}:{height:"100%",width:"100%"}]}>
+        <View
+          style={[
+            styles.cameraContainer,
+            isExpanded
+              ? { width: 500, height: 500 }
+              : { height: "100%", width: "100%" },
+          ]}
+        >
           <Camera
             ref={camera}
             style={StyleSheet.absoluteFill}
@@ -251,7 +260,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "black" },
   cameraContainer: {
     borderRadius: 10,
-    overflow: "hidden"
+    overflow: "hidden",
   },
   blackBg: { flex: 1, backgroundColor: "black" },
   overlay: {

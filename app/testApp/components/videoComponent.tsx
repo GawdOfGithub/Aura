@@ -98,22 +98,19 @@ export const VideoBubble = ({
 
   return (
     <View style={styles.wrapper}>
-      <Pressable
-        style={{ alignItems: "center" }}
-        onPress={openModal}
-      >
+      <Pressable style={{ alignItems: "center" }} onPress={openModal}>
         <Animated.View style={[styles.bubble, animatedBubbleStyle]}>
           <VideoView
             player={player}
             style={styles.video}
-            contentFit='cover'
+            contentFit="cover"
             nativeControls={false}
           />
         </Animated.View>
         <Text style={styles.username}>{videoCreatedBy}</Text>
       </Pressable>
 
-      <Modal visible={isVisible} transparent animationType='fade'>
+      <Modal visible={isVisible} transparent animationType="fade">
         <GestureHandlerRootView style={{ flex: 1 }}>
           <GestureDetector gesture={panGesture}>
             <Animated.View style={[styles.fullScreen, animatedModalStyle]}>
@@ -122,14 +119,15 @@ export const VideoBubble = ({
               <VideoView
                 player={player}
                 style={styles.fullVideo}
-                contentFit='contain'
+                contentFit="contain"
                 nativeControls={false}
               />
 
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={closeModal}
-                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}>
+                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+              >
                 <Text style={styles.closeText}>✕</Text>
               </TouchableOpacity>
             </Animated.View>
@@ -197,12 +195,3 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
 });
-
-
-
-
-
-
-
-
-
