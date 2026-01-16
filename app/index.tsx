@@ -2,6 +2,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import { useBackgroundUploadTrigger } from "./hooks/useBackgroundUploadTrigger";
+import ConsumptionScreen from "./screens/consumption";
 import { useAppSelector } from "./store/hooks";
 import HomeScreen from "./testApp/homeScreen";
 import LoginScreen from "./testApp/loginScreen";
@@ -24,6 +25,7 @@ export default function AppNavigation() {
       ) : (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Consumption" component={ConsumptionScreen} />
           <Stack.Screen name="VideoPreview" component={VideoPreviewScreen} />
         </Stack.Navigator>
       )}

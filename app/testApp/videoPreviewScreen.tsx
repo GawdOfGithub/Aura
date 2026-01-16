@@ -84,7 +84,7 @@ export const VideoPreviewScreen = ({ route, navigation }: any) => {
       <Video
         source={{ uri: activePath }}
         style={styles.fullScreenVideo}
-        resizeMode='cover'
+        resizeMode="cover"
         repeat={true}
         controls={false}
         onLoad={(data) => setVideoDuration(data.duration)}
@@ -117,12 +117,14 @@ export const VideoPreviewScreen = ({ route, navigation }: any) => {
               styles.toggleButton,
               viewMode === "original" && styles.toggleActive,
             ]}
-            onPress={() => setViewMode("original")}>
+            onPress={() => setViewMode("original")}
+          >
             <Text
               style={[
                 styles.toggleText,
                 viewMode === "original" && styles.toggleTextActive,
-              ]}>
+              ]}
+            >
               Original
             </Text>
           </TouchableOpacity>
@@ -134,15 +136,17 @@ export const VideoPreviewScreen = ({ route, navigation }: any) => {
               !compressedPath && styles.toggleDisabled,
             ]}
             disabled={!compressedPath}
-            onPress={() => setViewMode("compressed")}>
+            onPress={() => setViewMode("compressed")}
+          >
             {isCompressing ? (
-              <ActivityIndicator size='small' color='#999' />
+              <ActivityIndicator size="small" color="#999" />
             ) : (
               <Text
                 style={[
                   styles.toggleText,
                   viewMode === "compressed" && styles.toggleTextActive,
-                ]}>
+                ]}
+              >
                 Compressed
               </Text>
             )}

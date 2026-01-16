@@ -4,11 +4,11 @@ import {
   RuntimeShader,
   Skia,
   Canvas as SkiaCanvas,
-  useVideo
+  useVideo,
 } from "@shopify/react-native-skia";
-import { useVideoPlayer, VideoPlayer } from "expo-video";
 import React, { useEffect } from "react";
 import { StyleProp, ViewStyle } from "react-native";
+import { SharedValue } from "react-native-reanimated";
 
 // 1. Define the Shader
 const pixelateShaderString = `
@@ -27,9 +27,11 @@ interface PixelatedVideoProps {
   isMuted?: boolean;
   isLooped?: boolean;
   pixelSize?: number;
+  videoPaused?: SharedValue<boolean>;
   style?: StyleProp<ViewStyle>;
   width?: number;
   height?: number;
+  onReady?: () => void;
 }
 
 const PixelatedVideo = ({
@@ -38,28 +40,25 @@ const PixelatedVideo = ({
   isLooped = false,
   pixelSize = 10,
   style,
+  videoPaused,
   width = 350,
   height = 270,
+  onReady,
 }: PixelatedVideoProps) => {
-  
-  const player = useVideoPlayer(source, (playerInstance: VideoPlayer) => {
-    playerInstance.play(); 
+  // 4. Get Video Frame for Skia
+  const { currentFrame } = useVideo(source, {
+    looping: isLooped,
+    volume: isMuted ? 0 : 1,
+    paused: videoPaused,
   });
 
   useEffect(() => {
-    if (player) {
-      player.loop = isLooped;
-      player.muted = isMuted;
+    if (currentFrame && onReady) {
+      onReady();
     }
-  }, [player, isLooped, isMuted]); 
-
-  // 4. Get Video Frame for Skia
-  const { currentFrame } = useVideo(source,{
-    looping:isLooped
-  });
-
+  }, [currentFrame, onReady]);
   return (
-    <SkiaCanvas style={[{flex:1},style]}>
+    <SkiaCanvas style={[{ flex: 1 }, style]}>
       <Fill>
         <RuntimeShader source={pixelateShader} uniforms={{ pixelSize }}>
           <ImageShader

@@ -1,35 +1,24 @@
 import {
-    Blur,
-    Fill,
-    ImageShader,
-    Skia,
-    Canvas as SkiaCanvas,
-    useVideo
+  Blur,
+  Fill,
+  ImageShader,
+  Canvas as SkiaCanvas,
+  useVideo,
 } from "@shopify/react-native-skia";
-import { useVideoPlayer, VideoPlayer } from "expo-video";
 import React, { useEffect } from "react";
 import { StyleProp, ViewStyle } from "react-native";
-
-// 1. Define the Shader
-const blurShaderString = `
-uniform shader image;
-uniform float pixelSize;
-
-half4 main(float2 xy) {
-  float2 coord = floor(xy / pixelSize) * pixelSize;
-  return image.eval(coord);
-}
-`;
-const blurShader = Skia.RuntimeEffect.Make(blurShaderString)!;
+import { SharedValue } from "react-native-reanimated";
 
 interface BlurredVideoProps {
   source: string;
   isMuted?: boolean;
   isLooped?: boolean;
   blurRadius?: number;
+  videoPaused?: SharedValue<boolean>;
   style?: StyleProp<ViewStyle>;
   width?: number;
   height?: number;
+  onReady?: () => void;
 }
 
 const BlurredVideo = ({
@@ -38,39 +27,35 @@ const BlurredVideo = ({
   isLooped = false,
   blurRadius = 7,
   style,
+  videoPaused,
   width = 350,
   height = 270,
+  onReady,
 }: BlurredVideoProps) => {
-  
-  const player = useVideoPlayer(source, (playerInstance: VideoPlayer) => {
-    playerInstance.play(); 
+  // 4. Get Video Frame for Skia
+  const { currentFrame } = useVideo(source, {
+    looping: isLooped,
+    volume: isMuted ? 0 : 1,
+    paused: videoPaused,
   });
 
   useEffect(() => {
-    if (player) {
-      player.loop = isLooped;
-      player.muted = isMuted;
+    if (currentFrame && onReady) {
+      onReady();
     }
-  }, [player, isLooped, isMuted]); 
-
-  // 4. Get Video Frame for Skia
-  const { currentFrame } = useVideo(source,{
-    looping:isLooped
-  });
-
+  }, [currentFrame, onReady]);
   return (
-    <SkiaCanvas style={[{flex:1},style]}>
+    <SkiaCanvas style={[{ flex: 1 }, style]}>
       <Fill>
-        
-          <ImageShader
-            image={currentFrame}
-            x={0}
-            y={0}
-            width={width}
-            height={height}
-            fit="cover"
-          />
-          <Blur blur={blurRadius} />
+        <ImageShader
+          image={currentFrame}
+          x={0}
+          y={0}
+          width={width}
+          height={height}
+          fit="cover"
+        />
+        <Blur blur={blurRadius} />
       </Fill>
     </SkiaCanvas>
   );

@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import VideoWaveform from "../components/audio/audioWaveform";
 import { useFileFromAsset } from "../hooks/useFileFromAsset";
 import {
   selectIsVideoLoading,
@@ -97,7 +96,7 @@ const TestAppHomeScreen = ({ navigation }: any) => {
                 style={styles.avatar}
               />
             ) : (
-              <View style={[styles.avatar, { backgroundColor: "#333" }]} />
+              <View style={[styles.avatar]} />
             )}
           </View>
         </View>
@@ -106,17 +105,6 @@ const TestAppHomeScreen = ({ navigation }: any) => {
           <Text style={styles.groupTitle}>
             {groupData?.group_name || "Group 1"}
           </Text>
-          {localUri2 && (
-            <VideoWaveform
-              source={localUri2}
-              style={{
-                width: 142,
-                backgroundColor: "#FFFFFF2B",
-                paddingHorizontal: 10,
-                borderRadius: 48,
-              }}
-            />
-          )}
         </View>
 
         <View
@@ -174,8 +162,8 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 19,
     borderWidth: 2,
-    borderColor: "#e37239",
-    backgroundColor: "#333",
+    borderColor: "rgba(255,255,255,0.50)",
+    backgroundColor: "#e37239",
   },
   content: {
     flex: 1,
