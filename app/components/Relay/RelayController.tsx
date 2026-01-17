@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { scale } from "../../../utility/responsive";
+import { scale } from "../../utility/responsive";
 interface RelayControllerProps {
   activeIndex?: number;
   totalItems?: number;
@@ -59,5 +59,3 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 1)",
   },
 });
-
-

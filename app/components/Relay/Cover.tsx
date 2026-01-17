@@ -3,9 +3,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React from "react";
 import { Dimensions, StyleSheet, Text, View } from "react-native";
-import { useVideoTimer } from "../../../hooks/useVideoTimer";
-import { RelayState } from "../../../types";
-import { scale } from "../../../utility/responsive";
+import { useVideoTimer } from "../../hooks/useVideoTimer";
+import { RelayState } from "../../types";
+import { scale } from "../../utility/responsive";
 import { getTimerStyles } from "./TimeStyles";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -312,5 +312,3 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
-
-

@@ -1,4 +1,4 @@
-import { scale } from "../../../utility/responsive";
+import { scale } from "../../utility/responsive";
 
 type MainState = "live" | "ended" | "missed";
 

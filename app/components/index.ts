@@ -1,4 +1,4 @@
-export type { VideoData } from "../../screens/HomeScreen";
+export type { VideoData } from "../screens/HomeScreen";
 
 // Header components
 export * from "./Header/HomeScreenHeaders";

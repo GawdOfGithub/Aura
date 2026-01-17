@@ -3,9 +3,9 @@ import { NavigationProp } from "@react-navigation/native";
 
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { CameraFlipIcon, FlashToggleIcon } from "../../../assets/images/svg";
-import { scale } from "../../../utility/responsive";
-import { IconButton } from "../../Buttons";
+import { CameraFlipIcon, FlashToggleIcon } from "../../assets/images/svg";
+import { scale } from "../../utility/responsive";
+import { IconButton } from "../Buttons";
 
 interface CameraControlsProps {
   onFlashlightPress?: () => void;

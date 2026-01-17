@@ -1,8 +1,8 @@
 import React from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
-import { scale } from "../../../utility/responsive";
+import { scale } from "../../utility/responsive";
 
-import { GlobeIcon, WorldSwitcherBackground } from "../../../assets/images/svg";
+import { GlobeIcon, WorldSwitcherBackground } from "../../assets/images/svg";
 
 interface WorldToggleButtonProps {
   onPress?: () => void;

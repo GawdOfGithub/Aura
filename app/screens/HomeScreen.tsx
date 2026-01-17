@@ -4,11 +4,11 @@ import React, { useCallback, useState } from "react";
 import { Dimensions, Image, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Carousel from "react-native-reanimated-carousel";
-import { CameraControls } from "../components/HomeScreenComponents/Camera/CameraControls";
-import { HomeScreenHeaders } from "../components/HomeScreenComponents/Header/HomeScreenHeaders";
-import { Cover } from "../components/HomeScreenComponents/Relay/Cover";
-import { RelayController } from "../components/HomeScreenComponents/Relay/RelayController";
-import { WorldToggleButton } from "../components/HomeScreenComponents/WorldSwitcher/WorldToggleButton";
+import { CameraControls } from "../components/Camera/CameraControls";
+import { HomeScreenHeaders } from "../components/Header/HomeScreenHeaders";
+import { Cover } from "../components/Relay/Cover";
+import { RelayController } from "../components/Relay/RelayController";
+import { WorldToggleButton } from "../components/WorldSwitcher/WorldToggleButton";
 import { scale } from "../utility/responsive";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -142,7 +142,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         />
       );
     },
-    [currentVideoIndex, isScrolling],
+    [currentVideoIndex, isScrolling]
   );
 
   const navigation = useNavigation();
