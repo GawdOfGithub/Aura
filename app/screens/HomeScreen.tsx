@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { Dimensions, Image, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Carousel from "react-native-reanimated-carousel";
@@ -11,6 +11,9 @@ import {
   RelayController,
   WorldToggleButton,
 } from "../components";
+import { useThumbnailGenerator } from "../hooks/useThumbnailGenerator";
+import { useVideoPreloader } from "../hooks/useVideoPreloader";
+import { VideoItem } from "../testApp/components/VideoBubbleCarousel";
 import { scale } from "../utility/responsive";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -29,10 +32,20 @@ const getRelayEndTime = (offsetMinutes: number): string => {
   return date.toISOString();
 };
 
+const PUBLIC_VIDEOS = [
+  // Short videos (under 10 seconds each)
+  "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+  "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+  "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+  "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+  "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
+  "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+];
+
 const TEST_VIDEOS = [
   {
-    videoSource: jayshankarVideo,
-    relayEndTime: getRelayEndTime(10),
+    videoSource: PUBLIC_VIDEOS[0],
+    relayEndTime: getRelayEndTime(15000),
     newCount: 3,
     users: [
       { id: "1", name: "User 1", dp: imgImage465 },
@@ -40,13 +53,13 @@ const TEST_VIDEOS = [
     ],
   },
   {
-    videoSource: jayshankarVideo,
+    videoSource: PUBLIC_VIDEOS[1],
     relayEndTime: getRelayEndTime(5),
     newCount: 2,
     users: [{ id: "3", name: "User 3", dp: imgImage465 }],
   },
   {
-    videoSource: jayshankarVideo,
+    videoSource: PUBLIC_VIDEOS[2],
     relayEndTime: getRelayEndTime(-15),
     newCount: 5,
     users: [
@@ -55,13 +68,13 @@ const TEST_VIDEOS = [
     ],
   },
   {
-    videoSource: jayshankarVideo,
+    videoSource: PUBLIC_VIDEOS[3],
     relayEndTime: getRelayEndTime(-30),
     newCount: 4,
     users: [{ id: "8", name: "User 8", dp: imgImage465 }],
   },
   {
-    videoSource: jayshankarVideo,
+    videoSource: PUBLIC_VIDEOS[4],
     relayEndTime: getRelayEndTime(-90),
     newCount: 1,
     users: [
@@ -70,7 +83,7 @@ const TEST_VIDEOS = [
     ],
   },
   {
-    videoSource: jayshankarVideo,
+    videoSource: PUBLIC_VIDEOS[5],
     relayEndTime: getRelayEndTime(-180),
     newCount: 6,
     users: [{ id: "13", name: "User 13", dp: imgImage465 }],
@@ -115,6 +128,49 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 }) => {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(initialIndex);
   const [isScrolling, setIsScrolling] = useState(false);
+
+  const videoItems = useMemo(
+    () =>
+      videos.map((video, index) => ({
+        id: `video-${index}`,
+        videoUri: video.videoSource,
+      })),
+    [videos],
+  );
+
+  const { thumbnails, getThumbnail, isGenerating } = useThumbnailGenerator({
+    videos: videoItems,
+    currentIndex: currentVideoIndex,
+    lookahead: videos.length,
+  });
+
+  const { preloadedIndices, isPreloading } = useVideoPreloader({
+    videos: videoItems,
+    currentIndex: currentVideoIndex,
+    isScrolling,
+    lookahead: 2,
+  });
+
+  const carouselRef = useRef<any>(null);
+
+  const bubbleVideoItems: VideoItem[] = useMemo(
+    () =>
+      videos.map((video, index) => {
+        const thumbnail = getThumbnail(`video-${index}`);
+        return {
+          id: `video-${index}`,
+          videoUri: video.videoSource,
+          createdBy: video.users[0]?.name || `User ${index + 1}`,
+          thumbnailUri: thumbnail || undefined,
+        };
+      }),
+    [videos, getThumbnail],
+  );
+
+  const handleBubbleIndexChange = useCallback((index: number) => {
+    setCurrentVideoIndex(index);
+    carouselRef.current?.scrollTo({ index, animated: true });
+  }, []);
 
   const STATE_COMBINATIONS = [
     { relay: "live" as const, sub: "unseen" as const },
@@ -192,6 +248,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         }}
       >
         <Carousel
+          ref={carouselRef}
           loop={true}
           width={SCREEN_WIDTH}
           height={SCREEN_HEIGHT - scale.v(370)}
