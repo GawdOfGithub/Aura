@@ -14,6 +14,7 @@ import {
 import { useThumbnailGenerator } from "../hooks/useThumbnailGenerator";
 import { useVideoPreloader } from "../hooks/useVideoPreloader";
 import { VideoItem } from "../testApp/components/VideoBubbleCarousel";
+
 import { scale } from "../utility/responsive";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
