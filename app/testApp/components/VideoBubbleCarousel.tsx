@@ -12,6 +12,7 @@ import {
 import Animated, {
   Extrapolation,
   interpolate,
+  runOnJS,
   SharedValue,
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -38,6 +39,8 @@ interface VideoBubbleCarouselProps {
   videos: VideoItem[];
   activeIndex: number;
   onActiveIndexChange: (index: number) => void;
+  onScrollStart?: () => void;
+  onScrollEnd?: () => void;
 }
 
 interface BubbleProps {
@@ -51,10 +54,25 @@ interface BubbleProps {
 const SnapBubble = memo(
   ({ video, index, scrollX, activeIndex, onPress }: BubbleProps) => {
     const isActive = index === activeIndex;
-    const [thumbnailUri, setThumbnailUri] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const thumbnailUri = video.thumbnailUri || null;
+    const [generatedUri, setGeneratedUri] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(!thumbnailUri);
+    const finalThumbnail = thumbnailUri || generatedUri;
 
+    // Use pre-generated thumbnail if provided, otherwise generate
     useEffect(() => {
+      // If we already have a thumbnail from props, we're done
+      if (video.thumbnailUri) {
+        setIsLoading(false);
+        return;
+      }
+
+      // If we already generated one, we're done
+      if (generatedUri) {
+        setIsLoading(false);
+        return;
+      }
+
       const generateThumbnail = async () => {
         if (video.isEmpty || !video.videoUri) {
           setIsLoading(false);
@@ -70,7 +88,7 @@ const SnapBubble = memo(
           const { uri } = await VideoThumbnails.getThumbnailAsync(videoSource, {
             time: 1000,
           });
-          setThumbnailUri(uri);
+          setGeneratedUri(uri);
         } catch (e) {
           console.log("Thumbnail error:", e);
         } finally {
@@ -79,7 +97,7 @@ const SnapBubble = memo(
       };
 
       generateThumbnail();
-    }, [video.videoUri, video.isEmpty]);
+    }, [video.videoUri, video.isEmpty, video.thumbnailUri, generatedUri]);
 
     const animatedContainerStyle = useAnimatedStyle(() => {
       const inputRange = [
@@ -185,9 +203,9 @@ const SnapBubble = memo(
                 <View style={styles.loadingBubble}>
                   <ActivityIndicator size="small" color="#fff" />
                 </View>
-              ) : thumbnailUri ? (
+              ) : finalThumbnail && finalThumbnail.length > 0 ? (
                 <Image
-                  source={{ uri: thumbnailUri }}
+                  source={{ uri: finalThumbnail }}
                   style={styles.thumbnail}
                 />
               ) : (
@@ -218,6 +236,8 @@ export const VideoBubbleCarousel: React.FC<VideoBubbleCarouselProps> = ({
   videos,
   activeIndex,
   onActiveIndexChange,
+  onScrollStart,
+  onScrollEnd,
 }) => {
   const scrollX = useSharedValue(0);
   const scrollViewRef = useRef<Animated.ScrollView>(null);
@@ -230,9 +250,15 @@ export const VideoBubbleCarousel: React.FC<VideoBubbleCarouselProps> = ({
     },
     onBeginDrag: () => {
       isScrolling.value = true;
+      if (onScrollStart) {
+        runOnJS(onScrollStart)();
+      }
     },
-    onMomentumEnd: (event) => {
+    onMomentumEnd: () => {
       isScrolling.value = false;
+      if (onScrollEnd) {
+        runOnJS(onScrollEnd)();
+      }
     },
   });
 
@@ -295,8 +321,9 @@ export const VideoBubbleCarousel: React.FC<VideoBubbleCarouselProps> = ({
           { paddingHorizontal: PADDING_HORIZONTAL },
         ]}
         onScroll={scrollHandler}
-        scrollEventThrottle={16}
+        scrollEventThrottle={32}
         onMomentumScrollEnd={handleMomentumScrollEnd}
+        removeClippedSubviews={true}
       >
         {videos.map((video, index) => (
           <SnapBubble

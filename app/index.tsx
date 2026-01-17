@@ -21,6 +21,9 @@ export default function AppNavigation() {
     <NavigationContainer>
       {!isAuthenticated ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Home">
+            {(props) => <HomeScreen {...props} initialIndex={0} />}
+          </Stack.Screen>
           <Stack.Screen name="Login" component={LoginScreen} />
         </Stack.Navigator>
       ) : (
