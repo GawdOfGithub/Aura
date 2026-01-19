@@ -26,9 +26,7 @@ export default function AppNavigation() {
       ) : (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Home">
-            {(props) => (
-              <HomeScreen {...props} initialIndex={0} />
-            )}
+            {(props) => <HomeScreen {...props} initialIndex={0} />}
           </Stack.Screen>
           <Stack.Screen name="Consumption" component={ConsumptionScreen} />
           <Stack.Screen name="VideoPreview" component={VideoPreviewScreen} />
