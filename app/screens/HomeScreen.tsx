@@ -4,11 +4,13 @@ import React, { useCallback, useState } from "react";
 import { Dimensions, Image, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Carousel from "react-native-reanimated-carousel";
-import { CameraControls } from "../components/Camera/CameraControls";
-import { HomeScreenHeaders } from "../components/Header/HomeScreenHeaders";
-import { Cover } from "../components/Relay/Cover";
-import { RelayController } from "../components/Relay/RelayController";
-import { WorldToggleButton } from "../components/WorldSwitcher/WorldToggleButton";
+import {
+  CameraControls,
+  Cover,
+  HomeScreenHeaders,
+  RelayController,
+  WorldToggleButton,
+} from "../components";
 import { scale } from "../utility/responsive";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -30,7 +32,7 @@ const getRelayEndTime = (offsetMinutes: number): string => {
 const TEST_VIDEOS = [
   {
     videoSource: jayshankarVideo,
-    relayEndTime: getRelayEndTime(15000),
+    relayEndTime: getRelayEndTime(10),
     newCount: 3,
     users: [
       { id: "1", name: "User 1", dp: imgImage465 },

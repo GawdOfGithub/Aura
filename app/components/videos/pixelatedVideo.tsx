@@ -6,8 +6,8 @@ import {
   Canvas as SkiaCanvas,
   useVideo,
 } from "@shopify/react-native-skia";
-import React, { useEffect } from "react";
-import { StyleProp, ViewStyle } from "react-native";
+import React, { useEffect, useMemo } from "react";
+import { StyleProp, View, ViewStyle } from "react-native";
 import { SharedValue } from "react-native-reanimated";
 
 // 1. Define the Shader
@@ -31,6 +31,7 @@ interface PixelatedVideoProps {
   style?: StyleProp<ViewStyle>;
   width?: number;
   height?: number;
+  resolutionScale?: number; // Lower = Faster performance, Higher = Sharper "sub-pixels"
   onReady?: () => void;
 }
 
@@ -43,9 +44,9 @@ const PixelatedVideo = ({
   videoPaused,
   width = 350,
   height = 270,
+  resolutionScale = 0.5,
   onReady,
 }: PixelatedVideoProps) => {
-  // 4. Get Video Frame for Skia
   const { currentFrame } = useVideo(source, {
     looping: isLooped,
     volume: isMuted ? 0 : 1,
@@ -57,21 +58,52 @@ const PixelatedVideo = ({
       onReady();
     }
   }, [currentFrame, onReady]);
+
+  // --- OPTIMIZATION LOGIC ---
+
+  // 1. Calculate the smaller "physical" size for the canvas
+  const internalWidth = width * resolutionScale;
+  const internalHeight = height * resolutionScale;
+
+  // 2. Adjust the shader's pixel size
+  // Because we shrank the canvas, we need to shrink the pixel block size
+  // relative to the canvas so it looks the same size visually after scaling up.
+  const adjustedPixelSize = pixelSize * resolutionScale;
+
+  // 3. Create the transformation style to scale it back up visually
+  const transformStyle = useMemo(
+    () => ({
+      width: internalWidth,
+      height: internalHeight,
+      transform: [
+        { scaleX: 1 / resolutionScale },
+        { scaleY: 1 / resolutionScale },
+      ],
+      transformOrigin: "top left",
+    }),
+    [internalWidth, internalHeight, resolutionScale],
+  );
+
   return (
-    <SkiaCanvas style={[{ flex: 1 }, style]}>
-      <Fill>
-        <RuntimeShader source={pixelateShader} uniforms={{ pixelSize }}>
-          <ImageShader
-            image={currentFrame}
-            x={0}
-            y={0}
-            width={width}
-            height={height}
-            fit="cover"
-          />
-        </RuntimeShader>
-      </Fill>
-    </SkiaCanvas>
+    <View style={[{ width, height, overflow: "hidden" }, style]}>
+      <SkiaCanvas style={transformStyle}>
+        <Fill>
+          <RuntimeShader
+            source={pixelateShader}
+            uniforms={{ pixelSize: adjustedPixelSize }}
+          >
+            <ImageShader
+              image={currentFrame}
+              x={0}
+              y={0}
+              width={internalWidth}
+              height={internalHeight}
+              fit="cover"
+            />
+          </RuntimeShader>
+        </Fill>
+      </SkiaCanvas>
+    </View>
   );
 };
 

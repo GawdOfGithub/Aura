@@ -1,7 +1,6 @@
 // Re-export all SVG icon components
-export { default as BackgroundPattern } from "./BackgroundPattern";
 export { default as CameraFlipIcon } from "./CameraFlipIcon";
-export { default as FavoriteIcon } from "./FavoriteIcon";
+export { default as FavoriteIcon } from "./favouriteIcon";
 export { default as FlashlightIcon } from "./FlashlightIcon";
 export { default as FlashToggleIcon } from "./FlashToggleIcon";
 export { default as GlobeIcon } from "./GlobeIcon";

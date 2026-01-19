@@ -1,7 +1,7 @@
 export type { VideoData } from "../screens/HomeScreen";
 
 // Header components
-export * from "./Header/HomeScreenHeaders";
+export { HomeScreenHeaders } from "./Header/HomeScreenHeaders";
 
 // Relay components
 export { Cover } from "./Relay/Cover";
