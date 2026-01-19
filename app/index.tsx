@@ -6,6 +6,7 @@ import HomeScreen from "./screens/HomeScreen";
 import ConsumptionScreen from "./screens/consumption";
 import { useAppSelector } from "./store/hooks";
 import LoginScreen from "./testApp/loginScreen";
+import { SelfieCameraScreen } from "./testApp/selfieCameraScreen";
 import { VideoPreviewScreen } from "./testApp/videoPreviewScreen";
 
 const Stack = createNativeStackNavigator();
@@ -24,14 +25,16 @@ export default function AppNavigation() {
           <Stack.Screen name="Login" component={LoginScreen} />
         </Stack.Navigator>
       ) : (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Navigator
+          initialRouteName="SelfieCamera"
+          screenOptions={{ headerShown: false }}
+        >
           <Stack.Screen name="Home">
-            {(props) => (
-              <HomeScreen {...props} initialIndex={0} />
-            )}
+            {(props) => <HomeScreen {...props} initialIndex={0} />}
           </Stack.Screen>
           <Stack.Screen name="Consumption" component={ConsumptionScreen} />
           <Stack.Screen name="VideoPreview" component={VideoPreviewScreen} />
+          <Stack.Screen name="SelfieCamera" component={SelfieCameraScreen} />
         </Stack.Navigator>
       )}
     </NavigationContainer>

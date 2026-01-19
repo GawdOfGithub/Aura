@@ -6,7 +6,7 @@ import { FavoriteIcon } from "../../assets/images/svg";
 import { scale } from "../../utility/responsive";
 import { IconButton } from "../Buttons";
 
-const imgImage465 = require("../../../assets/images/png/test_image.png");
+const imgImage465 = require("../../assets/images/png/test_image.png");
 
 interface HomeScreenHeadersProps {
   onBackPress?: () => void;

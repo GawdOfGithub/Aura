@@ -76,7 +76,15 @@
           }
         }
       ],
-      "expo-video"
+      "expo-video",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -85,7 +93,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "11eaa553-1487-4fdc-af20-627c01589a56"
+        "projectId": "26202695-76c9-4aaf-8d1b-f97f6fa92d6b"
       }
     }
   }

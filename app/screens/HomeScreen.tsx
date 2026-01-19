@@ -142,7 +142,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         />
       );
     },
-    [currentVideoIndex, isScrolling]
+    [currentVideoIndex, isScrolling],
   );
 
   const navigation = useNavigation();
@@ -216,7 +216,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           onFlashlightPress={onFlashlightPress}
           onRotateCameraPress={onRotateCameraPress}
           onVideoCaptured={handleVideoCaptured}
-          navigation={navigation}
+          navigation={navigation as any}
         />
         <WorldToggleButton onPress={onWorldSwitcherPress} />
       </View>
