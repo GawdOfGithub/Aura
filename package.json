@@ -62,6 +62,7 @@
     "react-native-worklets-core": "^1.6.2",
     "react-redux": "^9.2.0",
     "redux-persist": "^6.0.0",
+    "rn-emoji-keyboard": "^1.7.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
