@@ -2,7 +2,7 @@ import * as React from "react";
 import Svg, { Defs, G, LinearGradient, Path, Stop } from "react-native-svg";
 /* SVGR has dropped some elements not supported by react-native-svg: filter */
 
-function RectangleIcon(props) {
+function RectangleIcon(props:any) {
   return (
     <Svg
       width={142}
