@@ -1,220 +1,178 @@
 import { useEvent } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { memo, useEffect, useState } from "react";
 import {
-  Pressable,
+  Image,
+  ImageSourcePropType,
   StyleSheet,
   View,
   ViewStyle,
 } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import Animated, { FadeIn } from "react-native-reanimated";
 
-interface OptimizedVideoPlayerProps {
-  source: string | number;
-  isActive: boolean;
+interface AppVideoPlayerProps {
+  source: string;
+  thumbnailSource: ImageSourcePropType;
+  shouldLoad: boolean;
+  shouldPlay: boolean;
   style?: ViewStyle;
-  showControls?: boolean;
-  loop?: boolean;
   muted?: boolean;
+  loop?: boolean;
   onPlay?: () => void;
   onPause?: () => void;
   onEnd?: () => void;
   onReady?: () => void;
 }
 
-interface PlayPauseOverlayProps {
-  isPlaying: boolean;
-  onPress: () => void;
-  visible: boolean;
-}
-
-const PlayPauseOverlay: React.FC<PlayPauseOverlayProps> = ({
-  isPlaying,
-  onPress,
-  visible,
-}) => {
-  const opacity = useSharedValue(visible ? 0.3 : 0);
-
-  useEffect(() => {
-    opacity.value = withTiming(visible ? 1 : 0, { duration: 200 });
-  }, [visible, opacity]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View style={[styles.overlayContainer, animatedStyle]}>
-      <Pressable style={styles.overlayPressable} onPress={onPress}>
-        <View style={styles.playPauseButton}>
-          <View
-            style={isPlaying ? styles.pauseIconContainer : styles.playIcon}
-          >
-            {isPlaying ? (
-              <>
-                <View style={styles.pauseBar} />
-                <View style={styles.pauseBar} />
-              </>
-            ) : null}
-          </View>
-        </View>
-      </Pressable>
-    </Animated.View>
-  );
-};
-
-export const OptimizedVideoPlayer: React.FC<OptimizedVideoPlayerProps> = ({
+// 1. The Heavy Lifter: Manages the actual native player instance
+const ActiveVideoComponent = ({
   source,
-  isActive,
-  style,
-  showControls = true,
-  loop = true,
-  muted = true,
-  onPlay,
-  onPause,
+  shouldPlay,
+  muted,
+  loop,
   onEnd,
   onReady,
-}) => {
-  const [showOverlay, setShowOverlay] = useState(false);
-  const hideOverlayTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasCalledOnReady = useRef(false);
-
+  onPlay,
+  onPause,
+}: Omit<AppVideoPlayerProps, "shouldLoad" | "style" | "thumbnailSource">) => {
+  // Setup the player instance
   const player = useVideoPlayer(source, (p) => {
-    p.loop = loop;
-    p.muted = muted;
+    p.loop = loop ?? false;
+    p.muted = muted ?? false;
+    // CRITICAL: We do NOT auto-play in the setup. We let the useEffect below handle it.
   });
 
-  const { isPlaying } = useEvent(player, "playingChange", {
+  const { status, isPlaying } = useEvent(player, "statusChange", {
+    status: player.status,
     isPlaying: player.playing,
   });
 
+  // 2. Playback Control Logic
+  // This reacts instantly when the user swipes to this video
   useEffect(() => {
-    if (isActive) {
+    if (shouldPlay) {
       player.play();
     } else {
       player.pause();
+      // Optional: specific seek to 0 if you want preloaded videos to always start fresh
+      // player.currentTime = 0;
     }
-  }, [isActive, player]);
+  }, [shouldPlay, player]);
 
+  // 3. Mute Management
+  // Ensure preloaded videos are strictly muted until they become the active one
   useEffect(() => {
-    const subscription = player.addListener("playToEnd", () => {
-      onEnd?.();
+    player.muted = muted ?? false;
+  }, [muted, player]);
+
+  // 4. Event Listeners
+  useEffect(() => {
+    const endSub = player.addListener("playToEnd", () => onEnd?.());
+    const playSub = player.addListener("playingChange", (playing) => {
+      playing ? onPlay?.() : onPause?.();
     });
-    return () => subscription.remove();
-  }, [player, onEnd]);
 
-  useEffect(() => {
-    const subscription = player.addListener("statusChange", (payload) => {
-      if (payload.status === "readyToPlay" && !hasCalledOnReady.current) {
-        hasCalledOnReady.current = true;
-        onReady?.();
-      }
-    });
-    return () => subscription.remove();
-  }, [player, onReady]);
-
-  const togglePlayPause = useCallback(() => {
-    if (isPlaying) {
-      player.pause();
-      onPause?.();
-    } else {
-      player.play();
-      onPlay?.();
-    }
-  }, [isPlaying, player, onPlay, onPause]);
-
-  const handleVideoPress = useCallback(() => {
-    if (!showControls) return;
-    if (hideOverlayTimeout.current) {
-      clearTimeout(hideOverlayTimeout.current);
-    }
-    setShowOverlay(true);
-    hideOverlayTimeout.current = setTimeout(() => {
-      setShowOverlay(false);
-    }, 2000);
-  }, [showControls]);
-
-  useEffect(() => {
     return () => {
-      if (hideOverlayTimeout.current) {
-        clearTimeout(hideOverlayTimeout.current);
-      }
+      endSub.remove();
+      playSub.remove();
     };
-  }, []);
+  }, [player, onEnd, onPlay, onPause]);
+
+  // Notify parent when video is buffered and ready
+  useEffect(() => {
+    if (status === "readyToPlay") {
+      onReady?.();
+    }
+  }, [status, onReady]);
 
   return (
-    <View style={[styles.container, style]}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={handleVideoPress}>
-        <VideoView
-          player={player}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          nativeControls={false}
-        />
-      </Pressable>
-
-      {showControls && isActive && (
-        <PlayPauseOverlay
-          isPlaying={isPlaying}
-          onPress={togglePlayPause}
-          visible={showOverlay}
-        />
-      )}
-    </View>
+    <VideoView
+      player={player}
+      style={StyleSheet.absoluteFill}
+      contentFit="cover"
+      nativeControls={false}
+      // On Android, this helps with performance during list scrolling
+      allowsFullscreen={false}
+    />
   );
 };
+
+// 5. The Container: Handles the switching between Image and Video
+export const OptimizedVideoPlayer: React.FC<AppVideoPlayerProps> = memo(
+  ({
+    source,
+    thumbnailSource,
+    shouldLoad,
+    shouldPlay,
+    style,
+    muted = false,
+    loop = false,
+    onPlay,
+    onPause,
+    onEnd,
+    onReady,
+  }) => {
+    const [isVideoReady, setIsVideoReady] = useState(false);
+
+    // If we unload the video (scroll far away), reset the ready state
+    useEffect(() => {
+      if (!shouldLoad) {
+        setIsVideoReady(false);
+      }
+    }, [shouldLoad]);
+
+    return (
+      <View style={[styles.container, style]}>
+        {/* LAYER 1: The Video Player
+         Mounted only if shouldLoad is true (Current OR Next Item)
+      */}
+        {shouldLoad && (
+          <ActiveVideoComponent
+            source={source}
+            shouldPlay={shouldPlay}
+            muted={muted}
+            loop={loop}
+            onEnd={onEnd}
+            onPlay={onPlay}
+            onPause={onPause}
+            onReady={() => {
+              setIsVideoReady(true);
+              onReady?.();
+            }}
+          />
+        )}
+
+        {/* LAYER 2: The Thumbnail Image
+         Visible if:
+         1. Video is NOT meant to load (Far away items)
+         2. OR Video IS loading but hasn't buffered yet (prevents black flash)
+         
+         We use Absolute positioning to sit on top of the video container.
+      */}
+        {(!shouldLoad || !isVideoReady) && (
+          <Animated.View
+            entering={FadeIn.duration(200)}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none" // Let touches pass through to the video view if needed
+          >
+            <Image
+              source={thumbnailSource}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+            />
+          </Animated.View>
+        )}
+      </View>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   container: {
     overflow: "hidden",
-  },
-  placeholder: {
-    backgroundColor: "#1a1a1a",
-  },
-  overlayContainer: {
-    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#000",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-  },
-  overlayPressable: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  playPauseButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  playIcon: {
-    width: 0,
-    height: 0,
-    marginLeft: 6,
-    borderLeftWidth: 20,
-    borderTopWidth: 12,
-    borderBottomWidth: 12,
-    borderLeftColor: "rgba(255, 255, 255, 0.9)",
-    borderTopColor: "transparent",
-    borderBottomColor: "transparent",
-  },
-  pauseIconContainer: {
-    flexDirection: "row",
-    gap: 6,
-  },
-  pauseBar: {
-    width: 6,
-    height: 24,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    borderRadius: 2,
   },
 });
 
