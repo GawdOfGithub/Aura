@@ -67,7 +67,7 @@ export const Cover: React.FC<CoverProps> = ({
   const isBlurred = subState === "unseen";
   const badgeText = React.useMemo(
     () => (subState === "unseen" ? `${newCount} New` : `${newCount} 🔥`),
-    [subState, newCount]
+    [subState, newCount],
   );
 
   const badgeColors = React.useMemo(() => {
@@ -104,7 +104,7 @@ export const Cover: React.FC<CoverProps> = ({
 
   const shouldShowVideo = React.useMemo(
     () => isActive && !isScrolling,
-    [isActive, isScrolling]
+    [isActive, isScrolling],
   );
 
   // Use the smart timer hook with dynamic update intervals

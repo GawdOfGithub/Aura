@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Dimensions, Image, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Carousel from "react-native-reanimated-carousel";
@@ -11,9 +11,6 @@ import {
   RelayController,
   WorldToggleButton,
 } from "../components";
-import { useThumbnailGenerator } from "../hooks/useThumbnailGenerator";
-import { useVideoPreloader } from "../hooks/useVideoPreloader";
-import { VideoItem } from "../testApp/components/VideoBubbleCarousel";
 
 import { scale } from "../utility/responsive";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -130,48 +127,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [currentVideoIndex, setCurrentVideoIndex] = useState(initialIndex);
   const [isScrolling, setIsScrolling] = useState(false);
 
-  const videoItems = useMemo(
-    () =>
-      videos.map((video, index) => ({
-        id: `video-${index}`,
-        videoUri: video.videoSource,
-      })),
-    [videos],
-  );
-
-  const { thumbnails, getThumbnail, isGenerating } = useThumbnailGenerator({
-    videos: videoItems,
-    currentIndex: currentVideoIndex,
-    lookahead: videos.length,
-  });
-
-  const { preloadedIndices, isPreloading } = useVideoPreloader({
-    videos: videoItems,
-    currentIndex: currentVideoIndex,
-    isScrolling,
-    lookahead: 2,
-  });
-
   const carouselRef = useRef<any>(null);
-
-  const bubbleVideoItems: VideoItem[] = useMemo(
-    () =>
-      videos.map((video, index) => {
-        const thumbnail = getThumbnail(`video-${index}`);
-        return {
-          id: `video-${index}`,
-          videoUri: video.videoSource,
-          createdBy: video.users[0]?.name || `User ${index + 1}`,
-          thumbnailUri: thumbnail || undefined,
-        };
-      }),
-    [videos, getThumbnail],
-  );
-
-  const handleBubbleIndexChange = useCallback((index: number) => {
-    setCurrentVideoIndex(index);
-    carouselRef.current?.scrollTo({ index, animated: true });
-  }, []);
 
   const STATE_COMBINATIONS = [
     { relay: "live" as const, sub: "unseen" as const },
