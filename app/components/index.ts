@@ -1,13 +1,13 @@
 export type { VideoData } from "../screens/HomeScreen";
 
 // Header components
-export { HomeScreenHeaders } from "./Header/HomeScreenHeaders";
+export { HomeScreenHeaders } from "./header/HomeScreenHeaders";
 
 // Relay components
-export { Cover } from "./Relay/Cover";
-export { RelayController } from "./Relay/RelayController";
+export { Cover } from "./relay/Cover";
+export { RelayController } from "./relay/RelayController";
 
 // Control components
-export { CameraControls } from "./Camera/CameraControls";
-export { WorldToggleButton } from "./WorldSwitcher/WorldToggleButton";
+export { CameraControls } from "./camera/CameraControls";
+export { WorldToggleButton } from "./world-switcher/WorldToggleButton";
 

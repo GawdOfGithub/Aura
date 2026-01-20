@@ -1,4 +1,4 @@
-import useBackgroundRemoval from "@/hooks/BackgroundRemovalResult";
+import useBackgroundRemoval from "@/hooks/useBackgroundRemoval";
 import { normalizeFileUri } from "@/utilities/filePathNormalization";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -29,7 +29,7 @@ import {
   CIRCLE_CENTER_Y,
   CIRCLE_RADIUS,
   CircleOverlay,
-} from "../components/SelfieCameraComponents/CircleOverlay";
+} from "../components/selfie-camera-component/CircleOverlay";
 import { useFaceValidation } from "../hooks/useFaceValidation";
 import { StickerImage } from "./components/StickerImage";
 

@@ -1,4 +1,4 @@
-import BlurredVideo from "@/app/components/videos/blurredVideo";
+import BlurredVideo from "@/app/components/videos/BlurredVideo";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useEffect, useState } from "react";
 import { Dimensions, StyleSheet, TouchableOpacity, View } from "react-native";

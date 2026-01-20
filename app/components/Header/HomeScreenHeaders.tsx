@@ -4,7 +4,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { FavoriteIcon } from "../../assets/images/svg";
 import { scale } from "../../utility/responsive";
-import { IconButton } from "../Buttons";
+import { IconButton } from "../buttons";
 
 const imgImage465 = require("../../assets/images/png/test_image.png");
 

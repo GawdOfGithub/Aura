@@ -39,7 +39,7 @@ const AudioWaveForm = forwardRef<IWaveformRef, AudioWaveFormProps>(
       onPlayerStateChange,
       onPanStateChange,
     },
-    parentRef
+    parentRef,
   ) => {
     const localRef = useRef<IWaveformRef>(null);
     useImperativeHandle(parentRef, () => ({
@@ -117,7 +117,7 @@ const AudioWaveForm = forwardRef<IWaveformRef, AudioWaveFormProps>(
         onPanStateChange={onPanStateChange}
       />
     );
-  }
+  },
 );
 
 export default AudioWaveForm;
