@@ -1,4 +1,3 @@
-import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useEffect, useState } from "react";
 
@@ -7,18 +6,13 @@ interface UseNavigationTransitionProps {
   onTransitionEnd?: () => void;
 }
 
-
-export function useNavigationTransition({
-  onTransitionStart,
-  onTransitionEnd,
-}: UseNavigationTransitionProps = {}) {
-
-  const navigation = useNavigation<StackNavigationProp<any>>();
-
+export function useNavigationTransition(
+  navigation: StackNavigationProp<any>,
+  { onTransitionStart, onTransitionEnd }: UseNavigationTransitionProps = {},
+) {
   const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
-    // 1. Transition Start Listener
     const unsubscribeStart = navigation.addListener("transitionStart", () => {
       setIsNavigating(true);
       if (onTransitionStart) {
@@ -26,9 +20,7 @@ export function useNavigationTransition({
       }
     });
 
-    // 2. Transition End Listener
     const unsubscribeEnd = navigation.addListener("transitionEnd", () => {
-   
       if (navigation.isFocused()) {
         setIsNavigating(false);
       }
@@ -44,5 +36,5 @@ export function useNavigationTransition({
     };
   }, [navigation, onTransitionStart, onTransitionEnd]);
 
-  return { isNavigating, setIsNavigating };
+  return { isNavigating };
 }
