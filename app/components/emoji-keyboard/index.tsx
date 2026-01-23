@@ -48,9 +48,9 @@ const EmojiKeyBoard = ({
       emojisByCategory={customEmojisByCategory}
       onEmojiSelected={onEmojiSelected}
       theme={{
-        container: "red",
+        container: "#232322",
         header: "#FFFFFFA3",
-        knob: "blue",
+        knob: "rgba(255, 255, 255, 0.48)",
         category: {
           icon: "#EBEBF599",
           iconActive: "#EBEBF599",

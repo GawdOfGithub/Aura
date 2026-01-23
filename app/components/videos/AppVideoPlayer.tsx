@@ -1,18 +1,12 @@
 import { useEvent } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React, { memo, useEffect, useState } from "react";
-import {
-  Image,
-  ImageSourcePropType,
-  StyleSheet,
-  View,
-  ViewStyle,
-} from "react-native";
+import { Image, StyleSheet, View, ViewStyle } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 
 interface AppVideoPlayerProps {
   source: string;
-  thumbnailSource: ImageSourcePropType;
+  thumbnailSource: string | undefined;
   shouldLoad: boolean;
   shouldPlay: boolean;
   style?: ViewStyle;
@@ -42,7 +36,7 @@ const ActiveVideoComponent = ({
     // CRITICAL: We do NOT auto-play in the setup. We let the useEffect below handle it.
   });
 
-  const { status, isPlaying } = useEvent(player, "statusChange", {
+  const { status } = useEvent(player, "statusChange", {
     status: player.status,
     isPlaying: player.playing,
   });
@@ -98,7 +92,7 @@ const ActiveVideoComponent = ({
 };
 
 // 5. The Container: Handles the switching between Image and Video
-export const OptimizedVideoPlayer: React.FC<AppVideoPlayerProps> = memo(
+export const AppVideoPlayer: React.FC<AppVideoPlayerProps> = memo(
   ({
     source,
     thumbnailSource,
@@ -156,7 +150,7 @@ export const OptimizedVideoPlayer: React.FC<AppVideoPlayerProps> = memo(
             pointerEvents="none" // Let touches pass through to the video view if needed
           >
             <Image
-              source={thumbnailSource}
+              source={{ uri: thumbnailSource }}
               style={StyleSheet.absoluteFill}
               resizeMode="cover"
             />
@@ -176,4 +170,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OptimizedVideoPlayer;
+export default AppVideoPlayer;

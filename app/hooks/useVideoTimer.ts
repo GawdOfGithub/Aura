@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-
-type MainState = "live" | "ended" | "missed";
+import { RelayState } from "../types";
 
 interface UseVideoTimerProps {
   relayEndTime: string;
   isActive: boolean;
-  mainState: MainState;
+  mainState?: RelayState;
 }
 
 interface UseVideoTimerReturn {
