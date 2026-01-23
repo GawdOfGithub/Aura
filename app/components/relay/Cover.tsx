@@ -1,16 +1,14 @@
-import { ProgressiveBlurView } from "@sbaiahmed1/react-native-blur";
 import { LinearGradient } from "expo-linear-gradient";
-import { useVideoPlayer, VideoView } from "expo-video";
+import { useVideoPlayer, VideoSource, VideoView } from "expo-video";
 import React from "react";
 import { Dimensions, StyleSheet, Text, View } from "react-native";
-import { useVideoTimer } from "../../hooks/useVideoTimer";
 import { RelayState } from "../../types";
 import { scale } from "../../utility/responsive";
-import { getTimerStyles } from "./TimeStyles";
+import CountdownTimer from "../time/CountdownTimer";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-const VideoPlayerView: React.FC<{ videoSource: any; style: any }> = ({
+const VideoPlayerView: React.FC<{ videoSource: VideoSource; style: any }> = ({
   videoSource,
   style,
 }) => {
@@ -42,10 +40,10 @@ interface User {
 }
 
 interface CoverProps {
-  videoSource: any;
+  videoSource: VideoSource;
   relayEndTime: string;
   newCount?: number;
-  relayState?: RelayState;
+  relayState: RelayState;
   subState?: SubState;
   isActive?: boolean;
   isScrolling?: boolean;
@@ -108,69 +106,14 @@ export const Cover: React.FC<CoverProps> = ({
   );
 
   // Use the smart timer hook with dynamic update intervals
-  const { displayText, isExpired } = useVideoTimer({
-    relayEndTime,
-    isActive,
-    mainState: relayState,
-  });
 
-  const timerStyles = getTimerStyles(relayState, isExpired);
   return (
     <View style={styles.container}>
-      <View
-        style={[styles.timerBadge, { borderWidth: timerStyles.borderWidth }]}
-      >
-        {relayState === "live" ? (
-          <ProgressiveBlurView
-            blurType="light"
-            blurAmount={20}
-            style={[
-              styles.timerBadgeBlur,
-              { backgroundColor: timerStyles.backgroundColor },
-            ]}
-            overlayColor={timerStyles.overlayColor}
-          >
-            <Text
-              style={[
-                styles.timerText,
-                {
-                  color: timerStyles.textColor,
-                  fontSize: timerStyles.fontSize,
-                  fontWeight: timerStyles.fontWeight,
-                  lineHeight: timerStyles.lineHeight,
-                  fontFamily: "Inter",
-                  textAlign: "center",
-                },
-              ]}
-            >
-              {displayText}
-            </Text>
-          </ProgressiveBlurView>
-        ) : (
-          <View
-            style={[
-              styles.timerBadgeBlur,
-              { backgroundColor: timerStyles.backgroundColor },
-            ]}
-          >
-            <Text
-              style={[
-                styles.timerText,
-                {
-                  color: timerStyles.textColor,
-                  fontSize: timerStyles.fontSize,
-                  fontWeight: timerStyles.fontWeight,
-                  lineHeight: timerStyles.lineHeight,
-                  fontFamily: "Inter",
-                  textAlign: "center",
-                },
-              ]}
-            >
-              {displayText}
-            </Text>
-          </View>
-        )}
-      </View>
+      <CountdownTimer
+        relayEndTime={relayEndTime}
+        isActive={isActive}
+        relayState={relayState}
+      />
       <View style={[styles.videoCircle, { borderColor: badgeColors.ring }]}>
         <View style={styles.videoCircleInner}>
           {shouldShowVideo && (
@@ -246,30 +189,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "center",
   },
-  timerBadge: {
-    marginTop: 0,
-    marginBottom: scale.v(20),
-    minWidth: scale.m(75),
-    height: scale.v(40),
-    borderRadius: scale.m(12),
-    overflow: "hidden",
-    alignSelf: "center",
-  },
-  timerBadgeBlur: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(30, 230, 42, 0.15)",
-    paddingHorizontal: scale.h(12), // Increased padding for breathing room
-    paddingVertical: scale.v(4),
-  },
-  timerText: {
-    fontSize: scale.fontFixed(20),
-    lineHeight: scale.m(28),
-    color: "#26C72F",
-    fontWeight: "700",
-  },
+
   videoCircle: {
     width: scale.m(320),
     height: scale.m(320),

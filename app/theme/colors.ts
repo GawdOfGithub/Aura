@@ -1,5 +1,9 @@
 export const colors = {
+  font: {
+    0: "#ffffff",
+  },
   primary: {
+    //shades of primary color
     50: "#FF3320",
   },
   neutral: {
@@ -8,7 +12,10 @@ export const colors = {
     0: "#FFFFFF",
   },
   success: {
+    // shades of green (live,success etc)
+    0: "#1EE62A29",
     50: "#0CB818",
+    90: "#26C72F",
   },
 
   error: { 50: "#FF3320" },

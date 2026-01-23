@@ -61,12 +61,15 @@ export const useThumbnailGenerator = ({
         thumbnailCache.current.set(video.id, uri);
         setThumbnails(new Map(thumbnailCache.current));
       } catch (error) {
-        console.warn(`Failed to generate thumbnail for video ${video.id}:`, error);
+        console.warn(
+          `Failed to generate thumbnail for video ${video.id}:`,
+          error,
+        );
       } finally {
         generatingIds.current.delete(video.id);
       }
     },
-    [timePosition]
+    [timePosition],
   );
 
   useEffect(() => {
@@ -76,7 +79,7 @@ export const useThumbnailGenerator = ({
       setIsGenerating(true);
 
       const indicesToGenerate: number[] = [];
-      
+
       if (lookahead >= videos.length) {
         for (let i = 0; i < videos.length; i++) {
           indicesToGenerate.push(i);
@@ -109,7 +112,7 @@ export const useThumbnailGenerator = ({
     (videoId: string): string | undefined => {
       return thumbnails.get(videoId);
     },
-    [thumbnails]
+    [thumbnails],
   );
 
   return {
