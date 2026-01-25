@@ -1,9 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
-import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useRef, useState } from "react";
-import { Dimensions, Image, StyleSheet, View } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Carousel from "react-native-reanimated-carousel";
+import { Dimensions, StyleSheet, View } from "react-native";
 import {
   CameraControls,
   Cover,
@@ -12,6 +9,7 @@ import {
   WorldToggleButton,
 } from "../components";
 
+import Carousel from "react-native-reanimated-carousel";
 import { scale } from "../utility/responsive";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -167,28 +165,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   }, []);
 
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <View
-        style={{
-          position: "absolute",
-          top: scale.v(106),
-        }}
-      >
-        <Image
-          resizeMode="cover"
-          source={require("../assets/images/png/background_pattern.png")}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: SCREEN_WIDTH + 50,
-            height: scale.m(600),
-            zIndex: -100,
-            opacity: 0.45,
-          }}
-        />
-      </View>
-
+    <View style={styles.container}>
       <HomeScreenHeaders
         onBackPress={onBackPress}
         onStarPress={onStarPress}
@@ -222,12 +199,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       </View>
 
       <View style={styles.worldSwitcherContainer} pointerEvents="box-none">
-        <LinearGradient
-          colors={["rgba(16,16,16, 0)", "rgba(16, 16, 16, 1)"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
         <CameraControls
           onFlashlightPress={onFlashlightPress}
           onRotateCameraPress={onRotateCameraPress}
@@ -241,7 +212,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         activeIndex={currentVideoIndex}
         totalItems={videos.length}
       />
-    </GestureHandlerRootView>
+
+      {/* <BlurBGCamera /> */}
+    </View>
   );
 };
 
@@ -250,7 +223,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT,
-    backgroundColor: "#000000",
+    backgroundColor: "black",
   },
 
   worldSwitcherContainer: {

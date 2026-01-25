@@ -173,8 +173,8 @@ export const TimelineCarousel: React.FC<TimelineCarouselProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    marginTop: scale.v(100),
-    height: 100, // Adjust based on your footer height
+
+    height: scale.m(100),
     justifyContent: "center",
     alignItems: "center",
     // Black background like the screenshot
