@@ -1,6 +1,5 @@
-import { useNavigation } from "@react-navigation/native";
 import React, { useCallback, useRef, useState } from "react";
-import { Dimensions, StyleSheet, View } from "react-native";
+import { Dimensions, Pressable, StyleSheet, View } from "react-native";
 import {
   CameraControls,
   Cover,
@@ -100,6 +99,7 @@ export interface VideoData {
 }
 
 interface HomeScreenProps {
+  navigation: any;
   videos?: VideoData[];
   initialIndex?: number;
   onBackPress?: () => void;
@@ -112,6 +112,7 @@ interface HomeScreenProps {
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
+  navigation,
   videos = TEST_VIDEOS,
   initialIndex = 0,
   onBackPress,
@@ -142,23 +143,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         STATE_COMBINATIONS[index % STATE_COMBINATIONS.length];
 
       return (
-        <Cover
-          videoSource={item.videoSource}
-          relayEndTime={item.relayEndTime}
-          newCount={item.newCount}
-          relayState={stateForBubble.relay}
-          subState={stateForBubble.sub}
-          isActive={index === currentVideoIndex}
-          isScrolling={isScrolling}
-          shouldBlur={false} // Disabled blur for testing clarity
-          users={item.users}
-        />
+        <Pressable onPress={() => navigation.navigate("Consumption")}>
+          <Cover
+            videoSource={item.videoSource}
+            relayEndTime={item.relayEndTime}
+            newCount={item.newCount}
+            relayState={stateForBubble.relay}
+            subState={stateForBubble.sub}
+            isActive={index === currentVideoIndex}
+            isScrolling={isScrolling}
+            shouldBlur={false} // Disabled blur for testing clarity
+            users={item.users}
+          />
+        </Pressable>
       );
     },
     [currentVideoIndex, isScrolling],
   );
-
-  const navigation = useNavigation();
 
   const handleVideoCaptured = useCallback((path: string) => {
     console.log("Video captured:", path);
