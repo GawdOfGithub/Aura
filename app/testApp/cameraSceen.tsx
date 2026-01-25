@@ -38,7 +38,7 @@ export const SeamlessCamera = ({
   const device = useCameraDevice(camPosition);
 
   const { token: userToken, data: userData } = useAppSelector(
-    (state) => state.user
+    (state) => state.user,
   );
   // ----- THIS CHANGED: High quality format for both preview and recording -----
   const cameraFormat = useCameraFormat(device, [
@@ -91,7 +91,7 @@ export const SeamlessCamera = ({
         id: uniqueSessionId,
         file_name: `${uniqueSessionId}.mp4`,
         file_type: "video/mp4",
-      })
+      }),
     );
 
     const startTime = Date.now();
@@ -116,7 +116,7 @@ export const SeamlessCamera = ({
               ? currentRecordingId.current
               : nanoid(),
             uri: video.path,
-          })
+          }),
         );
         uploadQueueManager.start();
       },
@@ -189,7 +189,7 @@ export const SeamlessCamera = ({
     .enabled(isExpanded)
     .onBegin(() => runOnJS(handleGestureBegin)())
     .onUpdate((e) =>
-      runOnJS(handleGestureUpdate)(e.translationX, e.translationY)
+      runOnJS(handleGestureUpdate)(e.translationX, e.translationY),
     )
     .onFinalize(() => runOnJS(handleGestureEnd)());
 
@@ -257,9 +257,9 @@ export const SeamlessCamera = ({
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "black" },
+  container: { flex: 1 },
   cameraContainer: {
-    borderRadius: 10,
+    borderRadius: 60,
     overflow: "hidden",
   },
   blackBg: { flex: 1, backgroundColor: "black" },

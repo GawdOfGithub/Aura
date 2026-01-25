@@ -1,7 +1,5 @@
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { FavoriteIcon } from "../../assets/images/svg";
 import { scale } from "../../utility/responsive";
 import { IconButton } from "../buttons";
@@ -23,21 +21,11 @@ export const HomeScreenHeaders: React.FC<HomeScreenHeadersProps> = ({
 }) => {
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={["rgba(16, 16, 16, 1)", "rgba(16, 16, 16, 0.04)"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={styles.gradientOverlay}
-      />
       <View style={styles.content}>
         <TouchableOpacity onPress={onBackPress} style={styles.profileButton}>
           <View style={styles.profileButtonGradient}>
             <View style={styles.profileImageContainer}>
-              <Image
-                source={{ uri: profileImage }}
-                style={styles.profileImage}
-                contentFit="cover"
-              />
+              <Image source={profileImage} style={styles.profileImage} />
             </View>
           </View>
         </TouchableOpacity>
