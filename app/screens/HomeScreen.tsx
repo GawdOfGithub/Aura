@@ -4,16 +4,12 @@ import {
   CameraControls,
   Cover,
   HomeScreenHeaders,
-  RelayController,
   WorldToggleButton,
 } from "../components";
 
 import Carousel from "react-native-reanimated-carousel";
 import { scale } from "../utility/responsive";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-
-const FOOTER_HEIGHT = scale.v(300);
-const EACH_VIDEO_HEIGHT = scale.m(500);
 
 const jayshankarVideo = require("../assets/videos/jayshankar.mp4");
 const imgImage465 = require("../assets/images/png/test_image.png");
@@ -84,6 +80,10 @@ const TEST_VIDEOS = [
     users: [{ id: "13", name: "User 13", dp: imgImage465 }],
   },
 ];
+
+// Size and layout
+const FOOTER_HEIGHT = scale.m(308);
+const HEADER_HEIGHT = scale.m(104);
 
 interface User {
   id: string;
@@ -171,15 +171,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         onBackPress={onBackPress}
         onStarPress={onStarPress}
         groupName={groupName}
+        headerHeight={HEADER_HEIGHT}
         profileImage={profileImage}
       />
 
       <View
         style={{
-          flex: 1,
+          height: SCREEN_HEIGHT - FOOTER_HEIGHT - HEADER_HEIGHT,
           justifyContent: "center",
           alignItems: "center",
-          marginTop: scale.v(50),
+          paddingTop: scale.v(30),
         }}
       >
         <Carousel
@@ -198,20 +199,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           style={{ flex: 1 }}
         />
       </View>
+      <CameraControls
+        onFlashlightPress={onFlashlightPress}
+        onRotateCameraPress={onRotateCameraPress}
+        onVideoCaptured={handleVideoCaptured}
+        navigation={navigation as any}
+        footerHeight={FOOTER_HEIGHT}
+      />
 
-      <View style={styles.worldSwitcherContainer} pointerEvents="box-none">
-        <CameraControls
-          onFlashlightPress={onFlashlightPress}
-          onRotateCameraPress={onRotateCameraPress}
-          onVideoCaptured={handleVideoCaptured}
-          navigation={navigation as any}
-        />
-        <WorldToggleButton onPress={onWorldSwitcherPress} />
-      </View>
-
-      <RelayController
-        activeIndex={currentVideoIndex}
-        totalItems={videos.length}
+      <WorldToggleButton
+        onPress={onWorldSwitcherPress}
+        footerHeight={FOOTER_HEIGHT}
       />
 
       {/* <BlurBGCamera /> */}
@@ -228,7 +226,7 @@ const styles = StyleSheet.create({
   },
 
   worldSwitcherContainer: {
-    height: scale.v(256),
+    height: scale.m(256),
     alignItems: "center",
   },
 });

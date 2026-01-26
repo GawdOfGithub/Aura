@@ -1,9 +1,15 @@
+import { MinimalVideoItem } from "@/app/types";
 import { NavigationProp } from "@react-navigation/native";
 import { nanoid } from "@reduxjs/toolkit";
-import React, { useEffect, useRef, useState } from "react";
-import { Dimensions, StyleSheet, View, ViewStyle } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { runOnJS } from "react-native-reanimated";
+import React, {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+import { StyleSheet, View, ViewStyle } from "react-native";
 import {
   Camera,
   CameraPosition,
@@ -12,252 +18,193 @@ import {
   useCameraPermission,
   useMicrophonePermission,
 } from "react-native-vision-camera";
-import uploadQueueManager from "../../modules/upload/uploadQueueManager";
-import { enqueueVideo } from "../../store/features/upload/uploadSlice";
 import { fetchPresignedUrl } from "../../store/features/upload/uploadThunk";
 import { useAppDispatch } from "../../store/hooks";
 
-// ----- CONSTANTS -----
-const SCREEN_WIDTH = Dimensions.get("window").width;
-const SCREEN_HEIGHT = Dimensions.get("window").height;
-const TARGET_BITRATE = 1.5 * 1000 * 1000; // 1.5 Mbps
-const TARGET_RESOLUTION = { width: 1280, height: 720 };
-const TARGET_FPS = 30;
+// --- TYPES ---
+
+export type AppCameraRef = {
+  startRecording: () => void;
+  stopRecording: () => Promise<void>;
+  toggleCamera: () => void;
+  // Allows parent to feed gesture data into the camera's logic
+  handleGesture: (type: "begin" | "update" | "end", payload?: any) => void;
+};
 
 type AppCameraProps = {
-  forCapture: boolean; // Determines mode (UI-only vs Recording)
-  onClose?: () => void;
+  forCapture: boolean;
+  cameraIsActive: boolean;
   viewStyle?: ViewStyle;
+  onVideoCaptured: ({ videoPath, videoId }: MinimalVideoItem) => void;
   navigation?: NavigationProp<any>;
 };
 
-export const AppCamera = ({
-  forCapture,
-  viewStyle,
-  onClose,
-  navigation,
-}: AppCameraProps) => {
-  const dispatch = useAppDispatch();
-  const [camPosition, setCamPosition] = useState<CameraPosition>("front");
+// --- COMPONENT ---
 
-  // 1. Device Selection
-  const device = useCameraDevice(camPosition);
+export const AppCamera = forwardRef<AppCameraRef, AppCameraProps>(
+  ({ forCapture, cameraIsActive, viewStyle, onVideoCaptured }, ref) => {
+    const dispatch = useAppDispatch();
+    const camera = useRef<Camera>(null);
 
-  // 2. Format Selection (HD 720p @ 30fps)
-  // We prioritize the resolution and FPS requested.
-  const cameraFormat = useCameraFormat(device, [
-    { videoResolution: TARGET_RESOLUTION },
-    { fps: TARGET_FPS },
-  ]);
+    // --- STATE ---
+    const [camPosition, setCamPosition] = useState<CameraPosition>("front");
+    const [zoom, setZoom] = useState(1);
+    const [isRecording, setIsRecording] = useState(false);
+    const isRecordingRef = useRef(false);
 
-  const {
-    hasPermission: hasCamPermission,
-    requestPermission: requestCamPermission,
-  } = useCameraPermission();
-  const {
-    hasPermission: hasMicPermission,
-    requestPermission: requestMicPermission,
-  } = useMicrophonePermission();
+    // --- SETUP ---
+    const device = useCameraDevice(camPosition);
+    const format = useCameraFormat(device, [
+      { videoResolution: { width: 1280, height: 720 } },
+      { fps: 30 },
+    ]);
+    const { hasPermission: hasCam } = useCameraPermission();
+    const { hasPermission: hasMic } = useMicrophonePermission();
 
-  const camera = useRef<Camera>(null);
-  const [isRecording, setIsRecording] = useState(false);
+    // --- REFS FOR LOGIC ---
+    const currentRecordingId = useRef<string | null>(null);
+    const recordingTime = useRef<NodeJS.Timeout | null>(null);
+    const recordingTimeout = useRef<number | null>(null); // For tap vs hold
+    const lastFlipX = useRef(0);
+    const startZoom = useRef(1);
+    const lastTap = useRef(0);
 
-  // --- ZOOM STATE ---
-  const minZoom = device?.minZoom ?? 1;
-  const maxZoom = Math.min(device?.maxZoom ?? 5, 5);
-  const [zoom, setZoom] = useState(minZoom);
+    // Reset zoom when device changes
+    useEffect(() => {
+      setZoom(device?.minZoom ?? 1);
+    }, [device?.id]);
 
-  // --- RECORDING STATE ---
-  const [recordingDuration, setRecordingDuration] = useState(0);
-  const recordingTime = useRef<NodeJS.Timeout | null | number>(null);
-  const currentRecordingId = useRef<string | null>(null);
+    // --- ACTIONS ---
 
-  // --- GESTURE REFS ---
-  const recordingTimeout = useRef<NodeJS.Timeout | null | number>(null);
-  const lastTap = useRef<number>(0);
-  const lastFlipX = useRef(0);
-  const startZoom = useRef(minZoom);
+    const toggleCamera = useCallback(() => {
+      setCamPosition((p) => (p === "back" ? "front" : "back"));
+    }, []);
 
-  // Initial Permission Check
-  useEffect(() => {
-    if (!hasCamPermission) requestCamPermission();
-    if (forCapture && !hasMicPermission) requestMicPermission();
-  }, [hasCamPermission, hasMicPermission, forCapture]);
+    const startRecording = useCallback(() => {
+      if (!camera.current || !forCapture) return;
 
-  // Reset Zoom on Device Change
-  useEffect(() => {
-    setZoom(minZoom);
-  }, [device?.id]);
+      setIsRecording(true);
+      isRecordingRef.current = true;
+      const id = nanoid();
+      currentRecordingId.current = id;
 
-  const startRecording = () => {
-    if (!camera.current || !forCapture) return;
+      // Upload Prep
+      dispatch(
+        fetchPresignedUrl({
+          id,
+          file_name: `${id}.mp4`,
+          file_type: "video/mp4",
+        }),
+      );
 
-    setIsRecording(true);
-    const uniqueSessionId = nanoid();
-    currentRecordingId.current = uniqueSessionId;
+      camera.current.startRecording({
+        fileType: "mp4",
+        videoCodec: "h265",
+        onRecordingFinished: (video) => {
+          setIsRecording(false);
+          isRecordingRef.current = false;
+          onVideoCaptured({
+            videoPath: video.path,
+            videoId: currentRecordingId.current ?? nanoid(),
+          });
+          //   dispatch(
+          //     enqueueVideo({
+          //       id: currentRecordingId.current ?? nanoid(),
+          //       uri: video.path,
+          //     }),
+          //   );
+          //   uploadQueueManager.start();
+        },
+        onRecordingError: (e) => {
+          console.error(e);
+          setIsRecording(false);
+          isRecordingRef.current = false;
+        },
+      });
+    }, [forCapture, dispatch]);
 
-    // Pre-fetch upload URL (Optimistic)
-    dispatch(
-      fetchPresignedUrl({
-        id: uniqueSessionId,
-        file_name: `${uniqueSessionId}.mp4`,
-        file_type: "video/mp4",
-      }),
+    const stopRecording = useCallback(async () => {
+      if (camera.current && isRecording) {
+        await camera.current.stopRecording();
+      }
+    }, [isRecording]);
+
+    // --- GESTURE PROCESSING LOGIC ---
+    // We expose this function so the Parent can feed x/y values into it
+    const handleGesture = useCallback(
+      (
+        type: "begin" | "update" | "end",
+        payload?: { x: number; y: number },
+      ) => {
+        if (!forCapture) return;
+
+        if (type === "begin") {
+          lastFlipX.current = 0;
+          startZoom.current = zoom;
+          // Hold to record logic
+          recordingTimeout.current = setTimeout(() => {
+            startRecording();
+            recordingTimeout.current = null;
+          }, 300);
+        } else if (type === "update" && payload) {
+          if (!isRecordingRef.current) return;
+          const { x, y } = payload;
+
+          // Flip Logic
+          if (Math.abs(x - lastFlipX.current) > 120) {
+            toggleCamera();
+            lastFlipX.current = x;
+          }
+
+          // Zoom Logic
+          const zoomChange = -y / 150;
+          const min = device?.minZoom ?? 1;
+          const max = Math.min(device?.maxZoom ?? 5, 5);
+          setZoom(Math.max(min, Math.min(max, startZoom.current + zoomChange)));
+        } else if (type === "end") {
+          if (recordingTimeout.current) {
+            // It was a short tap (Toggle check)
+            clearTimeout(recordingTimeout.current);
+            recordingTimeout.current = null;
+            // It was a recording hold
+            stopRecording();
+          }
+        }
+      },
+      [zoom, device, forCapture, startRecording, stopRecording, toggleCamera],
     );
 
-    // Timer Logic
-    const startTime = Date.now();
-    setRecordingDuration(0);
-    recordingTime.current = setInterval(() => {
-      setRecordingDuration(Math.floor((Date.now() - startTime) / 1000));
-    }, 500);
+    // --- EXPOSE METHODS TO PARENT ---
+    useImperativeHandle(ref, () => ({
+      startRecording,
+      stopRecording,
+      toggleCamera,
+      handleGesture,
+    }));
 
-    camera.current.startRecording({
-      fileType: "mp4",
-      videoCodec: "h265", // Efficient compression
-      onRecordingFinished: async (video) => {
-        if (recordingTime.current) clearInterval(recordingTime.current);
-        setRecordingDuration(0);
-        setIsRecording(false);
+    if (!device || !hasCam || (forCapture && !hasMic))
+      return <View style={styles.blackBg} />;
 
-        // Enqueue for upload
-        dispatch(
-          enqueueVideo({
-            id: currentRecordingId.current
-              ? currentRecordingId.current
-              : nanoid(),
-            uri: video.path,
-          }),
-        );
-        uploadQueueManager.start();
-      },
-      onRecordingError: (err) => {
-        if (recordingTime.current) clearInterval(recordingTime.current);
-        setRecordingDuration(0);
-        console.error("Recording Error:", err);
-        setIsRecording(false);
-      },
-    });
-  };
-
-  const stopRecording = async () => {
-    if (camera.current && isRecording) {
-      await camera.current.stopRecording();
-    }
-  };
-
-  const toggleCamera = () => {
-    setCamPosition((prev) => (prev === "back" ? "front" : "back"));
-  };
-
-  // --- GESTURES LOGIC ---
-
-  const handleGestureBegin = () => {
-    lastFlipX.current = 0;
-    startZoom.current = zoom;
-    // Delay recording slightly to distinguish between a tap and a hold
-    recordingTimeout.current = setTimeout(() => {
-      startRecording();
-      recordingTimeout.current = null;
-    }, 300);
-  };
-
-  const handleGestureUpdate = (translationX: number, translationY: number) => {
-    // 1. Flip Camera Logic (Horizontal Swipe)
-    const FLIP_THRESHOLD = 120;
-    const distanceMoved = Math.abs(translationX - lastFlipX.current);
-    if (distanceMoved >= FLIP_THRESHOLD) {
-      toggleCamera();
-      lastFlipX.current = translationX;
-    }
-
-    // 2. Zoom Logic (Vertical Swipe)
-    // Only zoom if recording or preparing to record
-    const swipeY = -translationY;
-    const zoomChange = swipeY / 150;
-    let newZoom = startZoom.current + zoomChange;
-    if (newZoom < minZoom) newZoom = minZoom;
-    if (newZoom > maxZoom) newZoom = maxZoom;
-    setZoom(newZoom);
-  };
-
-  const handleGestureEnd = () => {
-    if (recordingTimeout.current) {
-      // Logic for Tap (Toggle Camera if short tap)
-      clearTimeout(recordingTimeout.current);
-      recordingTimeout.current = null;
-      handleDoubleTapCheck();
-    } else {
-      stopRecording();
-    }
-  };
-
-  const handleDoubleTapCheck = () => {
-    const now = Date.now();
-    if (now - lastTap.current < 300) {
-      toggleCamera();
-    } else {
-      // Single tap logic if needed
-    }
-    lastTap.current = now;
-  };
-
-  // Gesture Definition: Only enable gestures if forCapture is TRUE
-  const panGesture = Gesture.Pan()
-    .enabled(forCapture)
-    .onBegin(() => runOnJS(handleGestureBegin)())
-    .onUpdate((e) =>
-      runOnJS(handleGestureUpdate)(e.translationX, e.translationY),
-    )
-    .onFinalize(() => runOnJS(handleGestureEnd)());
-
-  // --- RENDER HELPERS ---
-
-  if (!device || !hasCamPermission) return <View style={styles.blackBg} />;
-
-  // Dynamic Styles based on prop
-  const containerStyle = forCapture
-    ? styles.captureContainer // 16:9 Aspect Ratio
-    : styles.fullScreenContainer; // Full Screen / 1:1
-
-  return (
-    <GestureDetector gesture={panGesture}>
-      <View style={[containerStyle, viewStyle]}>
+    return (
+      <View style={[styles.fullScreenContainer, viewStyle]}>
         <Camera
           ref={camera}
           style={StyleSheet.absoluteFill}
           device={device}
-          isActive={true} // Keep active, but toggle pipelines below
+          isActive={cameraIsActive}
           video={forCapture}
           audio={forCapture}
-          format={cameraFormat}
+          format={format}
           zoom={zoom}
-          videoBitRate={2.5}
-          resizeMode="cover" // Ensures screen is filled
-          enableZoomGesture={forCapture} // Native zoom gesture
+          resizeMode="cover"
+          enableZoomGesture={false} // Important: We control zoom via parent gesture
         />
       </View>
-    </GestureDetector>
-  );
-};
+    );
+  },
+);
 
 const styles = StyleSheet.create({
-  blackBg: {
-    flex: 1,
-    backgroundColor: "black",
-  },
-  // 16:9 Viewport for Capture
-  captureContainer: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH * (16 / 9), // 16:9 Aspect Ratio (Vertical)
-    overflow: "hidden",
-    borderRadius: 16,
-    backgroundColor: "black",
-  },
-  // Full Screen / Optimized Background
-  fullScreenContainer: {
-    width: "100%",
-    height: "100%",
-    overflow: "hidden",
-  },
+  blackBg: { flex: 1, backgroundColor: "black" },
+  fullScreenContainer: { flex: 1, overflow: "hidden" },
 });

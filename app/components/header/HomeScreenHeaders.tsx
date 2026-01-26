@@ -1,5 +1,12 @@
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  DimensionValue,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { FavoriteIcon } from "../../assets/images/svg";
 import { scale } from "../../utility/responsive";
 import { IconButton } from "../buttons";
@@ -11,16 +18,18 @@ interface HomeScreenHeadersProps {
   onStarPress?: () => void;
   groupName?: string;
   profileImage?: string;
+  headerHeight: DimensionValue;
 }
 
 export const HomeScreenHeaders: React.FC<HomeScreenHeadersProps> = ({
   onBackPress,
   onStarPress,
+  headerHeight,
   groupName = "Blr Peeps",
   profileImage = imgImage465,
 }) => {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { height: headerHeight }]}>
       <View style={styles.content}>
         <TouchableOpacity onPress={onBackPress} style={styles.profileButton}>
           <View style={styles.profileButtonGradient}>
@@ -44,7 +53,7 @@ export const HomeScreenHeaders: React.FC<HomeScreenHeadersProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    width: scale.m(375),
+    width: "100%",
     height: scale.v(106),
   },
   gradientOverlay: {

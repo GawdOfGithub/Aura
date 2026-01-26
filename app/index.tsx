@@ -8,7 +8,6 @@ import ConsumptionScreen from "./screens/consumption";
 import { useAppSelector } from "./store/hooks";
 import LoginScreen from "./testApp/loginScreen";
 import { VideoPreviewScreen } from "./testApp/videoPreviewScreen";
-import { videoToCircleTransition } from "./utility/screenTransitionAnimations";
 
 const Stack = createStackNavigator();
 
@@ -34,7 +33,7 @@ export default function AppNavigation() {
             <Stack.Screen
               name="Consumption"
               component={ConsumptionScreen}
-              options={videoToCircleTransition}
+              //  options={videoToCircleTransition}
             />
             <Stack.Screen name="VideoPreview" component={VideoPreviewScreen} />
           </Stack.Navigator>
