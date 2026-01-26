@@ -1,4 +1,5 @@
 import { NavigationProp } from "@react-navigation/native";
+import * as Haptics from "expo-haptics";
 
 import { MinimalVideoItem } from "@/app/types";
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -121,21 +122,23 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
   const handleSinglePress = () => {
     cameraVisible.value = 0;
     if (cameraState === "NoState") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setCameraState("ActionState");
     } else if (cameraState === "ActionState") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
       setCameraState("NoState");
     }
   };
 
   const handleLongPress = () => {
     if (cameraState == "NoState" || cameraState == "ActionState") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       cameraYPosition.value = CameraOutOffScreenOffset;
       setCameraState("RecordingState");
       if (cameraRef.current) {
         cameraRef.current.startRecording();
       }
-    } else {
-      setCameraState("NoState");
     }
   };
 
@@ -171,14 +174,23 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
   }, [cameraState]);
 
   const cameraButtonStyle = useMemo((): ViewStyle => {
-    if (cameraState === "ActionState" || cameraState == "RecordingState") {
+    if (cameraState === "ActionState") {
       return {
         position: "absolute" as const,
         bottom: getCameraWrapperPositionFromBottom("ActionState"),
         alignSelf: "center" as const,
       };
+    } else if (cameraState == "RecordingState") {
+      return {
+        position: "absolute" as const,
+        bottom: getCameraWrapperPositionFromBottom("ActionState"),
+        alignSelf: "center" as const,
+        width: scale.m(92),
+        height: scale.m(92),
+        borderWidth: 6,
+        borderColor: "rgba(239, 45, 28, 1)",
+      };
     }
-
     return {};
   }, [cameraState]);
 
@@ -299,13 +311,29 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
         <Pressable
           style={[styles.cameraWrapper, cameraButtonStyle]}
           onPress={handleSinglePress}
+          hitSlop={scale.m(15)}
           onLongPress={handleLongPress}
           onPressOut={handleLongPressEnd}
-        ></Pressable>
+        >
+          {cameraState == "RecordingState" && (
+            <View
+              style={{
+                width: scale.m(72),
+
+                height: scale.m(72),
+                borderRadius: scale.m(36),
+                backgroundColor: "rgba(255, 255, 255, 1)",
+              }}
+            />
+          )}
+        </Pressable>
         {cameraState == "ActionState" && (
           <DoubleIcon
             onCameraFlash={() => {}}
-            onCameraRotate={() => {}}
+            onCameraRotate={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              cameraRef.current?.toggleCamera();
+            }}
             positionFromBottom={getActionIconPositionFromBottom("ActionState")}
           />
         )}
