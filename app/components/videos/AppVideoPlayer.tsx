@@ -6,7 +6,7 @@ import Animated, { FadeIn } from "react-native-reanimated";
 
 interface AppVideoPlayerProps {
   source: string;
-  thumbnailSource: string | undefined;
+  thumbnailSource?: string;
   shouldLoad: boolean;
   shouldPlay: boolean;
   style?: ViewStyle;
