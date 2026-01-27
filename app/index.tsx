@@ -1,5 +1,5 @@
 import { NavigationContainer } from "@react-navigation/native";
-import { createStackNavigator } from "@react-navigation/stack";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useBackgroundUploadTrigger } from "./hooks/useBackgroundUploadTrigger";
@@ -9,7 +9,7 @@ import { useAppSelector } from "./store/hooks";
 import LoginScreen from "./testApp/loginScreen";
 import { VideoPreviewScreen } from "./testApp/videoPreviewScreen";
 
-const Stack = createStackNavigator();
+const Stack = createNativeStackNavigator();
 
 export default function AppNavigation() {
   const isAuthenticated = useAppSelector(
@@ -33,7 +33,11 @@ export default function AppNavigation() {
             <Stack.Screen
               name="Consumption"
               component={ConsumptionScreen}
-              //  options={videoToCircleTransition}
+              options={{
+                animation: "slide_from_bottom",
+                gestureEnabled: true,
+                gestureDirection: "vertical",
+              }}
             />
             <Stack.Screen name="VideoPreview" component={VideoPreviewScreen} />
           </Stack.Navigator>

@@ -199,17 +199,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           style={{ flex: 1 }}
         />
       </View>
-      <CameraControls
-        onFlashlightPress={onFlashlightPress}
-        onRotateCameraPress={onRotateCameraPress}
-        onVideoCaptured={handleVideoCaptured}
-        navigation={navigation as any}
-        footerHeight={FOOTER_HEIGHT}
-      />
+      <CameraControls cameraWrapperPositionFromBottom={scale.m(150)} />
 
       <WorldToggleButton
         onPress={onWorldSwitcherPress}
-        footerHeight={FOOTER_HEIGHT}
+        footerPositionFromBottom={scale.m(40)}
       />
 
       {/* <BlurBGCamera /> */}

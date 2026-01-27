@@ -1,8 +1,27 @@
 import { useEvent } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
-import React, { memo, useEffect, useState } from "react";
+import React, {
+  forwardRef,
+  memo,
+  useEffect,
+  useImperativeHandle,
+  useState,
+} from "react";
 import { Image, StyleSheet, View, ViewStyle } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
+
+export interface AppVideoPlayerRef {
+  play: () => void;
+  pause: () => void;
+  replay: () => void;
+  seekTo: (seconds: number) => void;
+}
+
+export type VideoProgressData = {
+  currentTime: number;
+  duration: number;
+  percentage: number; // 0 to 1
+};
 
 interface AppVideoPlayerProps {
   source: string;
@@ -16,96 +35,132 @@ interface AppVideoPlayerProps {
   onPause?: () => void;
   onEnd?: () => void;
   onReady?: () => void;
+  onProgress?: (data: VideoProgressData) => void;
 }
 
 // 1. The Heavy Lifter: Manages the actual native player instance
-const ActiveVideoComponent = ({
-  source,
-  shouldPlay,
-  muted,
-  loop,
-  onEnd,
-  onReady,
-  onPlay,
-  onPause,
-}: Omit<AppVideoPlayerProps, "shouldLoad" | "style" | "thumbnailSource">) => {
-  // Setup the player instance
-  const player = useVideoPlayer(source, (p) => {
-    p.loop = loop ?? false;
-    p.muted = muted ?? false;
-    // CRITICAL: We do NOT auto-play in the setup. We let the useEffect below handle it.
-  });
-
-  const { status } = useEvent(player, "statusChange", {
-    status: player.status,
-    isPlaying: player.playing,
-  });
-
-  // 2. Playback Control Logic
-  // This reacts instantly when the user swipes to this video
-  useEffect(() => {
-    if (shouldPlay) {
-      player.play();
-    } else {
-      player.pause();
-      // Optional: specific seek to 0 if you want preloaded videos to always start fresh
-      // player.currentTime = 0;
-    }
-  }, [shouldPlay, player]);
-
-  // 3. Mute Management
-  // Ensure preloaded videos are strictly muted until they become the active one
-  useEffect(() => {
-    player.muted = muted ?? false;
-  }, [muted, player]);
-
-  // 4. Event Listeners
-  useEffect(() => {
-    const endSub = player.addListener("playToEnd", () => onEnd?.());
-    const playSub = player.addListener("playingChange", (playing) => {
-      playing ? onPlay?.() : onPause?.();
+const ActiveVideoComponent = forwardRef<
+  AppVideoPlayerRef,
+  Omit<AppVideoPlayerProps, "shouldLoad" | "style" | "thumbnailSource">
+>(
+  (
+    {
+      source,
+      shouldPlay,
+      muted,
+      loop,
+      onEnd,
+      onReady,
+      onPlay,
+      onPause,
+      onProgress,
+    },
+    ref,
+  ) => {
+    // Setup the player instance
+    const player = useVideoPlayer(source, (p) => {
+      p.loop = loop ?? false;
+      p.muted = muted ?? false;
+      // CRITICAL: We do NOT auto-play in the setup. We let the useEffect below handle it.
     });
 
-    return () => {
-      endSub.remove();
-      playSub.remove();
-    };
-  }, [player, onEnd, onPlay, onPause]);
+    useImperativeHandle(ref, () => ({
+      play: () => player.play(),
+      pause: () => player.pause(),
+      replay: () => player.replay(),
+      seekTo: (seconds: number) => {
+        player.currentTime = seconds;
+      },
+    }));
+    const { status } = useEvent(player, "statusChange", {
+      status: player.status,
+      isPlaying: player.playing,
+    });
 
-  // Notify parent when video is buffered and ready
-  useEffect(() => {
-    if (status === "readyToPlay") {
-      onReady?.();
-    }
-  }, [status, onReady]);
+    // 2. Playback Control Logic
+    // This reacts instantly when the user swipes to this video
+    useEffect(() => {
+      if (shouldPlay) {
+        player.play();
+      } else {
+        player.pause();
+        // Optional: specific seek to 0 if you want preloaded videos to always start fresh
+        // player.currentTime = 0;
+      }
+    }, [shouldPlay, player]);
 
-  return (
-    <VideoView
-      player={player}
-      style={StyleSheet.absoluteFill}
-      contentFit="cover"
-      nativeControls={false}
-      // On Android, this helps with performance during list scrolling
-      allowsFullscreen={false}
-    />
-  );
-};
+    // 3. Mute Management
+    // Ensure preloaded videos are strictly muted until they become the active one
+    useEffect(() => {
+      player.muted = muted ?? false;
+    }, [muted, player]);
+
+    // 4. Event Listeners
+    useEffect(() => {
+      const endSub = player.addListener("playToEnd", () => onEnd?.());
+      const playSub = player.addListener("playingChange", (playing) => {
+        playing ? onPlay?.() : onPause?.();
+      });
+
+      const progressSub = player.addListener("timeUpdate", () => {
+        if (onProgress) {
+          const current = player.currentTime;
+          const duration = player.duration;
+
+          // Prevent division by zero or NaN
+          const safeDuration = duration > 0 ? duration : 1;
+          const percentage = Math.min(Math.max(current / safeDuration, 0), 1);
+
+          onProgress({
+            currentTime: current,
+            duration: duration,
+            percentage: percentage,
+          });
+        }
+      });
+
+      return () => {
+        endSub.remove();
+        playSub.remove();
+      };
+    }, [player, onEnd, onPlay, onPause, onProgress]);
+
+    // Notify parent when video is buffered and ready
+    useEffect(() => {
+      if (status === "readyToPlay") {
+        onReady?.();
+      }
+    }, [status, onReady]);
+
+    return (
+      <VideoView
+        player={player}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        nativeControls={false}
+        // On Android, this helps with performance during list scrolling
+        fullscreenOptions={{ enable: false }}
+      />
+    );
+  },
+);
 
 // 5. The Container: Handles the switching between Image and Video
-export const AppVideoPlayer: React.FC<AppVideoPlayerProps> = memo(
-  ({
-    source,
-    thumbnailSource,
-    shouldLoad,
-    shouldPlay,
-    style,
-    muted = false,
-    loop = false,
-    onPlay,
-    onPause,
-    onEnd,
-    onReady,
-  }) => {
+export const AppVideoPlayer = memo(
+  forwardRef<AppVideoPlayerRef, AppVideoPlayerProps>((props, ref) => {
+    const {
+      source,
+      thumbnailSource,
+      shouldLoad,
+      shouldPlay,
+      style,
+      muted = false,
+      loop = false,
+      onPlay,
+      onPause,
+      onEnd,
+      onReady,
+    } = props;
     const [isVideoReady, setIsVideoReady] = useState(false);
 
     // If we unload the video (scroll far away), reset the ready state
@@ -158,7 +213,7 @@ export const AppVideoPlayer: React.FC<AppVideoPlayerProps> = memo(
         )}
       </View>
     );
-  },
+  }),
 );
 
 const styles = StyleSheet.create({

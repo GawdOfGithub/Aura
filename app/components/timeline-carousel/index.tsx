@@ -10,6 +10,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import Carousel, { ICarouselInstance } from "react-native-reanimated-carousel";
+import { ProgressRing } from "./ProgressRing";
 
 // --- Constants ---
 const PAGE_WIDTH = Dimensions.get("window").width;
@@ -129,10 +130,18 @@ export const TimelineCarousel: React.FC<TimelineCarouselProps> = ({
       setActiveIndex(index);
     }
   };
+
   return (
     <View style={styles.container}>
-      <View style={styles.selectionRing} pointerEvents="none" />
-
+      {/* <View style={styles.selectionRing} pointerEvents="none" /> */}
+      <View style={styles.selectionRingContainer} pointerEvents="none">
+        <ProgressRing
+          size={scale.m(60)}
+          strokeWidth={scale.m(3)}
+          borderRadius={scale.m(9.5)}
+          duration={4000}
+        />
+      </View>
       <Carousel
         ref={timelineRef}
         loop={false}
@@ -206,7 +215,12 @@ const styles = StyleSheet.create({
     borderRadius: scale.m(10),
     borderWidth: RING_BORDER_WIDTH,
     borderColor: "white",
-    zIndex: 10,
+  },
+  selectionRingContainer: {
+    position: "absolute",
+    zIndex: 10, // Ensure it sits on top
+    justifyContent: "center",
+    alignItems: "center",
   },
   overlayContainer: {
     backgroundColor: "#0000008F",

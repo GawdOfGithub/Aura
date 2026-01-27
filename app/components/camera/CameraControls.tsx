@@ -1,4 +1,4 @@
-import { NavigationProp } from "@react-navigation/native";
+import { useIsFocused } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 
 import { MinimalVideoItem } from "@/app/types";
@@ -44,39 +44,25 @@ export type CameraState =
   | "PreviewSendState";
 
 interface CameraControlsProps {
-  onFlashlightPress?: () => void;
-  onRotateCameraPress?: () => void;
-  onVideoCaptured: (path: string) => void;
-  footerHeight: number;
-  navigation: NavigationProp<any>;
+  cameraContainerStyle?: ViewStyle;
+  cameraWrapperPositionFromBottom: number;
 }
 
 export const CameraControls: React.FC<CameraControlsProps> = ({
-  onFlashlightPress,
-  onRotateCameraPress,
-  onVideoCaptured,
-  footerHeight,
-  navigation,
+  cameraContainerStyle,
+  cameraWrapperPositionFromBottom,
 }) => {
   const cameraRef = useRef<AppCameraRef>(null);
+  const isFocused = useIsFocused();
   const [cameraState, setCameraState] = useState<CameraState>("NoState");
   const capturedVideoRef = useRef<MinimalVideoItem | null>(null);
   //  Add a shared value for visibility (1 = visible, 0 = hidden)
   // hidden when state is changing
   const cameraVisible = useSharedValue(1);
-  const getCameraWrapperPositionFromBottom = (state: CameraState) => {
-    if (state != "NoState") {
-      return footerHeight - (CameraContainerHeight + CameraWrapperSize) / 2;
-    }
-    return 0;
-  };
+
   const cameraYPosition = useSharedValue(0);
   const getActionIconPositionFromBottom = (state: CameraState) => {
-    return (
-      getCameraWrapperPositionFromBottom(state) +
-      CameraWrapperSize +
-      scale.v(22)
-    );
+    return cameraWrapperPositionFromBottom + CameraWrapperSize + scale.v(22);
   };
   const getCameraPositionFromWrapper = (state: CameraState) => {
     if (state == "NoState") {
@@ -103,7 +89,7 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
     }
     if (cameraState == "ActionState") {
       cameraYPosition.value =
-        getCameraWrapperPositionFromBottom("ActionState") +
+        cameraWrapperPositionFromBottom +
         getCameraPositionFromWrapper("ActionState");
       cameraVisible.value = 1;
     }
@@ -151,10 +137,10 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
     if (cameraState === "ActionState") {
       return {
         position: "absolute" as const,
-        zIndex: 1,
+        zIndex: 10,
         width: width,
         height: height,
-        backgroundColor: "rgba(0,0,0,0.80)",
+        backgroundColor: "rgba(0,0,0,0.75)",
         flexDirection: "row" as const,
         justifyContent: "center",
         alignItems: "flex-end",
@@ -163,11 +149,20 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
     if (cameraState == "RecordingState" || cameraState == "PreviewSendState") {
       return {
         position: "absolute" as const,
-        zIndex: 1,
+        zIndex: 10,
         width: width,
         height: height,
         backgroundColor: "rgba(0,0,0,1)",
         alignItems: "center",
+      };
+    }
+    if (cameraState == "NoState") {
+      return {
+        ...styles.container,
+        position: "absolute",
+        bottom:
+          cameraWrapperPositionFromBottom -
+          (CameraContainerHeight - CameraWrapperSize) / 2,
       };
     }
     return styles.container;
@@ -177,13 +172,13 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
     if (cameraState === "ActionState") {
       return {
         position: "absolute" as const,
-        bottom: getCameraWrapperPositionFromBottom("ActionState"),
+        bottom: cameraWrapperPositionFromBottom,
         alignSelf: "center" as const,
       };
     } else if (cameraState == "RecordingState") {
       return {
         position: "absolute" as const,
-        bottom: getCameraWrapperPositionFromBottom("ActionState"),
+        bottom: cameraWrapperPositionFromBottom,
         alignSelf: "center" as const,
         width: scale.m(92),
         height: scale.m(92),
@@ -297,14 +292,13 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
   }
   return (
     <GestureDetector gesture={panGesture}>
-      <View style={containerStyle}>
+      <View style={[containerStyle, cameraContainerStyle]}>
         <Animated.View style={[animatedCameraStyle, cameraStateStyle]}>
           <AppCamera
             ref={cameraRef}
             forCapture={true}
-            cameraIsActive={true}
+            cameraIsActive={isFocused}
             onVideoCaptured={handleVideoCaptured}
-            navigation={navigation}
           />
         </Animated.View>
 
@@ -341,8 +335,7 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
           <Text
             style={{
               position: "absolute",
-              bottom:
-                getCameraWrapperPositionFromBottom("ActionState") - scale.m(42),
+              bottom: cameraWrapperPositionFromBottom - scale.m(42),
               fontFamily: "SN Pro",
               fontWeight: "600",
               fontSize: scale.m(16),
@@ -366,6 +359,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: scale.m(24),
+    zIndex: 10,
   },
   cancelWrapper: {
     width: scale.m(32),

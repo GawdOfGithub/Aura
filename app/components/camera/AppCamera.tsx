@@ -1,5 +1,4 @@
 import { MinimalVideoItem } from "@/app/types";
-import { NavigationProp } from "@react-navigation/native";
 import { nanoid } from "@reduxjs/toolkit";
 import React, {
   forwardRef,
@@ -36,7 +35,6 @@ type AppCameraProps = {
   cameraIsActive: boolean;
   viewStyle?: ViewStyle;
   onVideoCaptured: ({ videoPath, videoId }: MinimalVideoItem) => void;
-  navigation?: NavigationProp<any>;
 };
 
 // --- COMPONENT ---
@@ -197,6 +195,7 @@ export const AppCamera = forwardRef<AppCameraRef, AppCameraProps>(
           format={format}
           zoom={zoom}
           resizeMode="cover"
+          outputOrientation="preview"
           enableZoomGesture={false} // Important: We control zoom via parent gesture
         />
       </View>

@@ -1,6 +1,7 @@
 import * as VideoThumbnails from "expo-video-thumbnails";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Image } from "react-native";
+import { MinimalVideoItem } from "../types";
 
 export interface VideoItem {
   id: string;
@@ -8,7 +9,7 @@ export interface VideoItem {
 }
 
 interface UseThumbnailGeneratorOptions {
-  videos: VideoItem[];
+  videos: MinimalVideoItem[];
   currentIndex: number;
   lookahead?: number;
   timePosition?: number;
@@ -39,34 +40,34 @@ export const useThumbnailGenerator = ({
   const generatingIds = useRef<Set<string>>(new Set());
 
   const generateThumbnail = useCallback(
-    async (video: VideoItem): Promise<void> => {
+    async (video: MinimalVideoItem): Promise<void> => {
       if (
-        thumbnailCache.current.has(video.id) ||
-        generatingIds.current.has(video.id)
+        thumbnailCache.current.has(video.videoId) ||
+        generatingIds.current.has(video.videoId)
       ) {
         return;
       }
 
-      if (!video.videoUri) {
+      if (!video.videoPath) {
         return;
       }
 
-      generatingIds.current.add(video.id);
+      generatingIds.current.add(video.videoId);
 
       try {
-        const videoUri = resolveVideoUri(video.videoUri);
+        const videoUri = resolveVideoUri(video.videoPath);
         const { uri } = await VideoThumbnails.getThumbnailAsync(videoUri, {
           time: timePosition,
         });
-        thumbnailCache.current.set(video.id, uri);
+        thumbnailCache.current.set(video.videoId, uri);
         setThumbnails(new Map(thumbnailCache.current));
       } catch (error) {
         console.warn(
-          `Failed to generate thumbnail for video ${video.id}:`,
+          `Failed to generate thumbnail for video ${video.videoId}:`,
           error,
         );
       } finally {
-        generatingIds.current.delete(video.id);
+        generatingIds.current.delete(video.videoId);
       }
     },
     [timePosition],
