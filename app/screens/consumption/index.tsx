@@ -1,15 +1,12 @@
 import EmojiKeyBoard from "@/app/components/emoji-keyboard";
-import VideoOverlayText from "@/app/components/text-components/VideoOverlayText";
-import StaticTimeAgo from "@/app/components/time/StaticTime";
 import { TimelineCarousel } from "@/app/components/timeline-carousel";
-import AppVideoPlayer from "@/app/components/videos/AppVideoPlayer";
+import ConsumptionVideoContainer from "@/app/components/videos/ConsumptionVideo";
 import useThumbnailGenerator from "@/app/hooks/useThumbnailGenerator";
 import { scale } from "@/app/utility/responsive";
-import { formatTime12hWithDay } from "@/app/utility/timeFuctions";
-import { getVideoHeightFromWidth } from "@/app/utility/videoSizeInfo";
+import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Dimensions, StyleSheet, View } from "react-native";
 import { EmojiType } from "rn-emoji-keyboard";
 
 const videoData = [
@@ -34,37 +31,23 @@ const videoData = [
     image: "https://picsum.photos/id/27/200/300",
   },
 ];
-const videoSource =
-  "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4";
-const videos = [{ videoUri: videoSource, id: "xyz" }];
+
+const { width, height } = Dimensions.get("window");
 const Consumption = () => {
+  const navigation = useNavigation();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [selectedEmoji, setSelectedEmoji] = useState<EmojiType | null>(null);
+  const videoSource =
+    "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4";
+  const videos = [{ videoPath: videoSource, videoId: "xyz" }];
   const { thumbnails, getThumbnail } = useThumbnailGenerator({
     videos,
     currentIndex: 1,
   });
-
   return (
     <View style={styles.container}>
-      <View style={styles.videoContainer}>
-        <AppVideoPlayer
-          thumbnailSource={getThumbnail("xyz")}
-          source={videoSource}
-          style={StyleSheet.absoluteFillObject}
-          shouldLoad={false}
-          shouldPlay
-        />
-        <VideoOverlayText text="Aditya" />
-        <StaticTimeAgo
-          relayState="live"
-          inputTime="2026-01-14T11:33:20.482910Z"
-        />
-        <VideoOverlayText
-          text={formatTime12hWithDay("2026-01-14T11:33:20.482910Z")}
-        />
-      </View>
-
+      <ConsumptionVideoContainer videoItem={videos[0]} />
+      {/* <CameraControls cameraWrapperPositionFromBottom={scale.m(138)} /> */}
       <LinearGradient
         colors={["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 1)"]}
         start={{ x: 0.5, y: 0 }}
@@ -73,11 +56,15 @@ const Consumption = () => {
           width: "100%",
           bottom: 0,
           position: "absolute",
-          height: scale.m(270),
+          zIndex: 0,
+          justifyContent: "flex-end",
+          paddingBottom: scale.v(25),
+          height: scale.m(260),
         }}
       >
         <TimelineCarousel data={videoData} />
       </LinearGradient>
+
       <EmojiKeyBoard
         isOpen={isOpen}
         onClose={() => {
@@ -98,12 +85,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  videoContainer: {
-    height: getVideoHeightFromWidth(),
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-  },
+
   bottomContainer: {
     flex: 1,
   },

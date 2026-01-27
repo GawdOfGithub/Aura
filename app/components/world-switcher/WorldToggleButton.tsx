@@ -1,25 +1,19 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
 import { scale } from "../../utility/responsive";
 
 import { GlobeIcon, WorldSwitcherBackground } from "../../assets/images/svg";
-import { CameraContainerHeight } from "../camera/CameraControls";
 
 interface WorldToggleButtonProps {
   onPress?: () => void;
-  footerHeight: number;
+  footerPositionFromBottom: number;
 }
 const WorldContainerHeight = scale.m(80);
 
 export const WorldToggleButton: React.FC<WorldToggleButtonProps> = ({
   onPress,
-  footerHeight,
+  footerPositionFromBottom,
 }) => {
-  const footerPositionFromBottom = useMemo(() => {
-    if (footerHeight) {
-      return footerHeight - CameraContainerHeight - WorldContainerHeight;
-    }
-  }, [footerHeight, CameraContainerHeight]);
   return (
     <TouchableOpacity
       onPress={onPress}
