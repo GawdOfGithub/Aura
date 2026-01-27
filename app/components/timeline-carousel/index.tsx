@@ -1,8 +1,16 @@
 import { colors } from "@/app/theme";
+import { VideoThumbnail } from "@/app/types";
 import { scale } from "@/app/utility/responsive";
 import * as Haptics from "expo-haptics";
 import React, { useRef, useState } from "react";
-import { Dimensions, Image, Pressable, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 import Animated, {
   interpolate,
   SharedValue,
@@ -10,7 +18,6 @@ import Animated, {
 } from "react-native-reanimated";
 
 import Carousel, { ICarouselInstance } from "react-native-reanimated-carousel";
-import { ProgressRing } from "./ProgressRing";
 
 // --- Constants ---
 const PAGE_WIDTH = Dimensions.get("window").width;
@@ -20,15 +27,9 @@ const RING_BORDER_WIDTH = 3;
 const ITEM_SPACING = 12;
 const CAROUSEL_ITEM_WIDTH = TILE_SIZE + ITEM_SPACING;
 
-// --- Types ---
-type VideoItem = {
-  id: string;
-  image: string;
-};
-
 // --- 1. Base Tile Component ---
 interface TileProps {
-  item: VideoItem;
+  item: VideoThumbnail;
   animationValue: SharedValue<number>;
   index: number;
   activeIndex: number;
@@ -90,11 +91,15 @@ const FilterTile: React.FC<TileProps> = ({
     <View style={styles.tileContainer}>
       <Pressable onPress={() => onPress(index)}>
         <Animated.View style={[styles.tile, animatedStyle]}>
-          <Image
-            source={{ uri: item.image }}
-            style={styles.image}
-            resizeMode="cover"
-          />
+          {item.imagePath ? (
+            <Image
+              source={{ uri: item.imagePath }}
+              style={styles.image}
+              resizeMode="cover"
+            />
+          ) : (
+            <ActivityIndicator size={"small"} style={{ alignSelf: "center" }} />
+          )}
           <Animated.View
             style={[
               StyleSheet.absoluteFill,
@@ -111,7 +116,7 @@ const FilterTile: React.FC<TileProps> = ({
 };
 
 interface TimelineCarouselProps {
-  data: VideoItem[];
+  data: VideoThumbnail[];
   firstIndex?: number;
   onSnapToItem?: (index: number) => void;
 }
@@ -133,15 +138,15 @@ export const TimelineCarousel: React.FC<TimelineCarouselProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* <View style={styles.selectionRing} pointerEvents="none" /> */}
-      <View style={styles.selectionRingContainer} pointerEvents="none">
+      <View style={styles.selectionRing} pointerEvents="none" />
+      {/* <View style={styles.selectionRingContainer} pointerEvents="none">
         <ProgressRing
           size={scale.m(60)}
           strokeWidth={scale.m(3)}
           borderRadius={scale.m(9.5)}
           duration={4000}
         />
-      </View>
+      </View> */}
       <Carousel
         ref={timelineRef}
         loop={false}

@@ -1,25 +1,35 @@
 import * as VideoThumbnails from "expo-video-thumbnails";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Image } from "react-native";
-import { MinimalVideoItem } from "../types";
+import { createMMKV } from "react-native-mmkv";
+import { VideoNote } from "../types";
 
-export interface VideoItem {
-  id: string;
-  videoUri: string | number;
-}
+// --- Types ---
+export type VideoThumbnail = {
+  videoId: string;
+  imagePath: string;
+};
 
 interface UseThumbnailGeneratorOptions {
-  videos: MinimalVideoItem[];
+  videos: VideoNote[];
   currentIndex: number;
-  lookahead?: number;
   timePosition?: number;
+  concurrencyLimit?: number; // New prop to control batch size
 }
 
 interface ThumbnailResult {
-  thumbnails: Map<string, string>;
   isGenerating: boolean;
-  getThumbnail: (videoId: string) => string | undefined;
+  getThumbnail: (videoId: string) => VideoThumbnail | undefined;
+  // We expose the version so consumers can force memo re-calculation if needed
+  cacheVersion: number;
 }
+
+// --- Storage Setup ---
+export const mmkvStorage = createMMKV({
+  id: "@video-chat-storage",
+});
+
+const getStorageKey = (videoId: string) => `thumbnail_${videoId}`;
 
 const resolveVideoUri = (source: string | number): string => {
   if (typeof source === "number") {
@@ -28,99 +38,118 @@ const resolveVideoUri = (source: string | number): string => {
   return source;
 };
 
+// --- Helper: Chunk Array ---
+const chunkArray = <T>(array: T[], size: number): T[][] => {
+  const result: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  return result;
+};
+
 export const useThumbnailGenerator = ({
   videos,
   currentIndex,
-  lookahead = 4,
   timePosition = 1000,
+  concurrencyLimit = 3, // Default to 3 parallel generations
 }: UseThumbnailGeneratorOptions): ThumbnailResult => {
-  const thumbnailCache = useRef<Map<string, string>>(new Map());
-  const [thumbnails, setThumbnails] = useState<Map<string, string>>(new Map());
   const [isGenerating, setIsGenerating] = useState(false);
+  const [cacheVersion, setCacheVersion] = useState(0);
   const generatingIds = useRef<Set<string>>(new Set());
 
+  // 1. Single Generation Task
   const generateThumbnail = useCallback(
-    async (video: MinimalVideoItem): Promise<void> => {
+    async (video: VideoNote): Promise<void> => {
+      const storageKey = getStorageKey(video.id);
+
+      // Skip if exists in MMKV or currently generating
       if (
-        thumbnailCache.current.has(video.videoId) ||
-        generatingIds.current.has(video.videoId)
+        mmkvStorage.contains(storageKey) ||
+        generatingIds.current.has(video.id)
       ) {
         return;
       }
 
-      if (!video.videoPath) {
-        return;
-      }
+      if (!video.videoPath) return;
 
-      generatingIds.current.add(video.videoId);
+      generatingIds.current.add(video.id);
 
       try {
         const videoUri = resolveVideoUri(video.videoPath);
+
+        // Generate
         const { uri } = await VideoThumbnails.getThumbnailAsync(videoUri, {
           time: timePosition,
+          quality: 0.7,
         });
-        thumbnailCache.current.set(video.videoId, uri);
-        setThumbnails(new Map(thumbnailCache.current));
+
+        // Save & Notify
+        mmkvStorage.set(storageKey, uri);
+        setCacheVersion((v) => v + 1);
       } catch (error) {
-        console.warn(
-          `Failed to generate thumbnail for video ${video.videoId}:`,
-          error,
-        );
+        console.warn(`Thumbnail failed for ${video.id}`, error);
       } finally {
-        generatingIds.current.delete(video.videoId);
+        generatingIds.current.delete(video.id);
       }
     },
     [timePosition],
   );
 
+  // 2. Orchestration (Batched)
   useEffect(() => {
     if (videos.length === 0) return;
 
-    const generateUpcoming = async () => {
-      setIsGenerating(true);
+    const runBatchGeneration = async () => {
+      // A. Identify what NEEDS generation within lookahead
+      const videosToGenerate: VideoNote[] = [];
+      const end = Math.min(currentIndex, videos.length - 1);
 
-      const indicesToGenerate: number[] = [];
+      for (let i = currentIndex; i <= end; i++) {
+        const video = videos[i];
+        const storageKey = getStorageKey(video.id);
 
-      if (lookahead >= videos.length) {
-        for (let i = 0; i < videos.length; i++) {
-          indicesToGenerate.push(i);
-        }
-      } else {
-        for (let i = 0; i <= lookahead; i++) {
-          const nextIndex = (currentIndex + i) % videos.length;
-          if (!indicesToGenerate.includes(nextIndex)) {
-            indicesToGenerate.push(nextIndex);
-          }
+        // Only queue if not in storage and not currently generating
+        if (
+          video &&
+          !mmkvStorage.contains(storageKey) &&
+          !generatingIds.current.has(video.id)
+        ) {
+          videosToGenerate.push(video);
         }
       }
 
-      const promises = indicesToGenerate.map((index) => {
-        const video = videos[index];
-        if (video) {
-          return generateThumbnail(video);
-        }
-        return Promise.resolve();
-      });
+      if (videosToGenerate.length === 0) return;
 
-      await Promise.all(promises);
+      setIsGenerating(true);
+
+      // B. Split into chunks (e.g., groups of 3)
+      const batches = chunkArray(videosToGenerate, concurrencyLimit);
+
+      // C. Process batches sequentially
+      for (const batch of batches) {
+        // Process items inside the batch in parallel
+        await Promise.all(batch.map((video) => generateThumbnail(video)));
+      }
+
       setIsGenerating(false);
     };
 
-    generateUpcoming();
-  }, [currentIndex, videos, lookahead, generateThumbnail]);
+    runBatchGeneration();
+  }, [currentIndex, videos, concurrencyLimit, generateThumbnail]);
 
+  // 3. Sync Accessor
   const getThumbnail = useCallback(
-    (videoId: string): string | undefined => {
-      return thumbnails.get(videoId);
+    (videoId: string): VideoThumbnail | undefined => {
+      const imagePath = mmkvStorage.getString(getStorageKey(videoId));
+      if (imagePath) {
+        return { videoId, imagePath };
+      }
+      return undefined;
     },
-    [thumbnails],
+    [],
   );
 
-  return {
-    thumbnails,
-    isGenerating,
-    getThumbnail,
-  };
+  return { isGenerating, getThumbnail, cacheVersion };
 };
 
 export default useThumbnailGenerator;
