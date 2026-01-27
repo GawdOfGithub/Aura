@@ -1,27 +1,8 @@
 import { useEvent } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
-import React, {
-  forwardRef,
-  memo,
-  useEffect,
-  useImperativeHandle,
-  useState,
-} from "react";
+import React, { memo, useEffect, useState } from "react";
 import { Image, StyleSheet, View, ViewStyle } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
-
-export interface AppVideoPlayerRef {
-  play: () => void;
-  pause: () => void;
-  replay: () => void;
-  seekTo: (seconds: number) => void;
-}
-
-export type VideoProgressData = {
-  currentTime: number;
-  duration: number;
-  percentage: number; // 0 to 1
-};
 
 interface AppVideoPlayerProps {
   source: string;
@@ -35,43 +16,33 @@ interface AppVideoPlayerProps {
   onPause?: () => void;
   onEnd?: () => void;
   onReady?: () => void;
-  onProgress?: (data: VideoProgressData) => void;
+  // New Props
+  onDuration?: (duration: number) => void;
+  onProgress?: (currentTime: number) => void;
 }
 
 // 1. The Heavy Lifter: Manages the actual native player instance
-const ActiveVideoComponent = forwardRef<
-  AppVideoPlayerRef,
-  Omit<AppVideoPlayerProps, "shouldLoad" | "style" | "thumbnailSource">
->(
-  (
-    {
-      source,
-      shouldPlay,
-      muted,
-      loop,
-      onEnd,
-      onReady,
-      onPlay,
-      onPause,
-      onProgress,
-    },
-    ref,
-  ) => {
+const ActiveVideoComponent = memo(
+  ({
+    source,
+    shouldPlay,
+    muted,
+    loop,
+    onEnd,
+    onReady,
+    onPlay,
+    onPause,
+    onDuration,
+    onProgress,
+  }: Omit<AppVideoPlayerProps, "shouldLoad" | "style" | "thumbnailSource">) => {
     // Setup the player instance
     const player = useVideoPlayer(source, (p) => {
       p.loop = loop ?? false;
       p.muted = muted ?? false;
+      p.timeUpdateEventInterval = 0.5;
       // CRITICAL: We do NOT auto-play in the setup. We let the useEffect below handle it.
     });
 
-    useImperativeHandle(ref, () => ({
-      play: () => player.play(),
-      pause: () => player.pause(),
-      replay: () => player.replay(),
-      seekTo: (seconds: number) => {
-        player.currentTime = seconds;
-      },
-    }));
     const { status } = useEvent(player, "statusChange", {
       status: player.status,
       isPlaying: player.playing,
@@ -84,44 +55,27 @@ const ActiveVideoComponent = forwardRef<
         player.play();
       } else {
         player.pause();
-        // Optional: specific seek to 0 if you want preloaded videos to always start fresh
-        // player.currentTime = 0;
       }
     }, [shouldPlay, player]);
 
-    // 3. Mute Management
-    // Ensure preloaded videos are strictly muted until they become the active one
     useEffect(() => {
       player.muted = muted ?? false;
     }, [muted, player]);
 
-    // 4. Event Listeners
     useEffect(() => {
       const endSub = player.addListener("playToEnd", () => onEnd?.());
-      const playSub = player.addListener("playingChange", (playing) => {
-        playing ? onPlay?.() : onPause?.();
+
+      const playSub = player.addListener("playingChange", (isPlaying) => {
+        isPlaying ? onPlay?.() : onPause?.();
       });
-
-      const progressSub = player.addListener("timeUpdate", () => {
-        if (onProgress) {
-          const current = player.currentTime;
-          const duration = player.duration;
-
-          // Prevent division by zero or NaN
-          const safeDuration = duration > 0 ? duration : 1;
-          const percentage = Math.min(Math.max(current / safeDuration, 0), 1);
-
-          onProgress({
-            currentTime: current,
-            duration: duration,
-            percentage: percentage,
-          });
-        }
+      const timeSub = player.addListener("timeUpdate", (event) => {
+        onProgress?.(event.currentTime);
       });
 
       return () => {
         endSub.remove();
         playSub.remove();
+        timeSub.remove();
       };
     }, [player, onEnd, onPlay, onPause, onProgress]);
 
@@ -130,7 +84,10 @@ const ActiveVideoComponent = forwardRef<
       if (status === "readyToPlay") {
         onReady?.();
       }
-    }, [status, onReady]);
+      if (player.duration > 0) {
+        onDuration?.(player.duration);
+      }
+    }, [status, onReady, onDuration, player.duration]);
 
     return (
       <VideoView
@@ -146,21 +103,22 @@ const ActiveVideoComponent = forwardRef<
 );
 
 // 5. The Container: Handles the switching between Image and Video
-export const AppVideoPlayer = memo(
-  forwardRef<AppVideoPlayerRef, AppVideoPlayerProps>((props, ref) => {
-    const {
-      source,
-      thumbnailSource,
-      shouldLoad,
-      shouldPlay,
-      style,
-      muted = false,
-      loop = false,
-      onPlay,
-      onPause,
-      onEnd,
-      onReady,
-    } = props;
+export const AppVideoPlayer: React.FC<AppVideoPlayerProps> = memo(
+  ({
+    source,
+    thumbnailSource,
+    shouldLoad,
+    shouldPlay,
+    style,
+    muted = false,
+    loop = false,
+    onPlay,
+    onPause,
+    onEnd,
+    onReady,
+    onDuration,
+    onProgress,
+  }) => {
     const [isVideoReady, setIsVideoReady] = useState(false);
 
     // If we unload the video (scroll far away), reset the ready state
@@ -172,9 +130,6 @@ export const AppVideoPlayer = memo(
 
     return (
       <View style={[styles.container, style]}>
-        {/* LAYER 1: The Video Player
-         Mounted only if shouldLoad is true (Current OR Next Item)
-      */}
         {shouldLoad && (
           <ActiveVideoComponent
             source={source}
@@ -184,6 +139,8 @@ export const AppVideoPlayer = memo(
             onEnd={onEnd}
             onPlay={onPlay}
             onPause={onPause}
+            onDuration={onDuration}
+            onProgress={onProgress}
             onReady={() => {
               setIsVideoReady(true);
               onReady?.();
@@ -196,13 +153,13 @@ export const AppVideoPlayer = memo(
          1. Video is NOT meant to load (Far away items)
          2. OR Video IS loading but hasn't buffered yet (prevents black flash)
          
-         We use Absolute positioning to sit on top of the video container.
+       Absolute positioning to sit on top of the video container.
       */}
         {(!shouldLoad || !isVideoReady) && (
           <Animated.View
             entering={FadeIn.duration(200)}
             style={StyleSheet.absoluteFill}
-            pointerEvents="none" // Let touches pass through to the video view if needed
+            pointerEvents="none"
           >
             <Image
               source={{ uri: thumbnailSource }}
@@ -213,7 +170,7 @@ export const AppVideoPlayer = memo(
         )}
       </View>
     );
-  }),
+  },
 );
 
 const styles = StyleSheet.create({

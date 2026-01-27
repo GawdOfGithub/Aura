@@ -23,7 +23,7 @@ const getRelayEndTime = (offsetMinutes: number): string => {
   return date.toISOString();
 };
 
-const PUBLIC_VIDEOS = [
+export const PUBLIC_VIDEOS = [
   // Short videos (under 10 seconds each)
   "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
   "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
