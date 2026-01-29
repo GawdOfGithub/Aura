@@ -57,7 +57,6 @@ const ConsumptionVideoContainer = ({
           style={{
             height: scale.m(40),
             width: width * 0.9,
-
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
@@ -86,6 +85,7 @@ const ConsumptionVideoContainer = ({
   );
   const navigation = useNavigation();
   const effectiveShouldPlay = isFocused && isVideoPlaying && !showReaction;
+
   return (
     <Pressable
       style={styles.videoContainer}

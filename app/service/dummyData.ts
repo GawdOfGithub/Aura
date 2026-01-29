@@ -51,12 +51,12 @@ export const videoData = [
 export const VideosData: VideoNote[] = Array.from({ length: 6 }).map(
   (_, index) => {
     const randomUser = UserData[Math.floor(Math.random() * UserData.length)];
-    const randomVideo =
-      PUBLIC_VIDEOS[Math.floor(Math.random() * PUBLIC_VIDEOS.length)];
+
+    const videoPath = PUBLIC_VIDEOS[index % PUBLIC_VIDEOS.length];
 
     return {
       id: `video-note-${index + 1}`,
-      videoPath: randomVideo,
+      videoPath,
       createdBy: randomUser,
       createdAt: new Date(
         Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000), // last 7 days

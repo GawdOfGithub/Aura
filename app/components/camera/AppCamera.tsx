@@ -1,4 +1,4 @@
-import { MinimalVideoItem } from "@/app/types";
+import { VideoCaptured } from "@/app/types";
 import { nanoid } from "@reduxjs/toolkit";
 import React, {
   forwardRef,
@@ -34,7 +34,7 @@ type AppCameraProps = {
   forCapture: boolean;
   cameraIsActive: boolean;
   viewStyle?: ViewStyle;
-  onVideoCaptured: ({ videoPath, videoId }: MinimalVideoItem) => void;
+  onVideoCaptured: ({ videoPath, id }: VideoCaptured) => void;
 };
 
 // --- COMPONENT ---
@@ -103,7 +103,7 @@ export const AppCamera = forwardRef<AppCameraRef, AppCameraProps>(
           isRecordingRef.current = false;
           onVideoCaptured({
             videoPath: video.path,
-            videoId: currentRecordingId.current ?? nanoid(),
+            id: currentRecordingId.current ?? nanoid(),
           });
           //   dispatch(
           //     enqueueVideo({

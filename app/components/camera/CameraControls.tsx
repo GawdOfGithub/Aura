@@ -1,7 +1,7 @@
 import { useIsFocused } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 
-import { MinimalVideoItem } from "@/app/types";
+import { VideoCaptured } from "@/app/types";
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Dimensions,
@@ -55,7 +55,7 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
   const cameraRef = useRef<AppCameraRef>(null);
   const isFocused = useIsFocused();
   const [cameraState, setCameraState] = useState<CameraState>("NoState");
-  const capturedVideoRef = useRef<MinimalVideoItem | null>(null);
+  const capturedVideoRef = useRef<VideoCaptured | null>(null);
   //  Add a shared value for visibility (1 = visible, 0 = hidden)
   // hidden when state is changing
   const cameraVisible = useSharedValue(1);
@@ -100,7 +100,7 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
     capturedVideoRef.current = null;
     setCameraState("NoState");
   };
-  const handleVideoCaptured = (capturedVideo: MinimalVideoItem) => {
+  const handleVideoCaptured = (capturedVideo: VideoCaptured) => {
     capturedVideoRef.current = capturedVideo;
     setCameraState("PreviewSendState");
   };

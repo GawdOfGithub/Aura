@@ -2,13 +2,14 @@ import { colors } from "@/app/theme";
 import { VideoThumbnail } from "@/app/types";
 import { scale } from "@/app/utility/responsive";
 import * as Haptics from "expo-haptics";
-import React, { useRef, useState } from "react";
+import React, { forwardRef, useRef } from "react";
 import {
   ActivityIndicator,
   Dimensions,
   Image,
   Pressable,
   StyleSheet,
+  Text,
   View,
 } from "react-native";
 import Animated, {
@@ -18,6 +19,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import Carousel, { ICarouselInstance } from "react-native-reanimated-carousel";
+import { ProgressRingHandle } from "./ProgressRing";
 
 // --- Constants ---
 const PAGE_WIDTH = Dimensions.get("window").width;
@@ -33,6 +35,7 @@ interface TileProps {
   animationValue: SharedValue<number>;
   index: number;
   activeIndex: number;
+  lastIndex?: number;
   isSeen: boolean;
   onPress: (index: number) => void;
 }
@@ -42,6 +45,7 @@ const FilterTile: React.FC<TileProps> = ({
   animationValue,
   index,
   onPress,
+  lastIndex,
   activeIndex,
   isSeen = true,
 }) => {
@@ -87,6 +91,35 @@ const FilterTile: React.FC<TileProps> = ({
     return { opacity };
   }, [isSeen]);
 
+  if (index == lastIndex) {
+    return (
+      <View style={[styles.tileContainer]}>
+        <Pressable onPress={() => onPress(index)}>
+          <Animated.View
+            style={[
+              styles.tile,
+              animatedStyle,
+              {
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: colors.success[90],
+              },
+            ]}
+          >
+            <Text
+              style={{
+                fontSize: scale.f(32),
+                color: "#FFFFFFA3",
+                marginTop: scale.v(-2),
+              }}
+            >
+              +
+            </Text>
+          </Animated.View>
+        </Pressable>
+      </View>
+    );
+  }
   return (
     <View style={styles.tileContainer}>
       <Pressable onPress={() => onPress(index)}>
@@ -117,22 +150,20 @@ const FilterTile: React.FC<TileProps> = ({
 
 interface TimelineCarouselProps {
   data: VideoThumbnail[];
-  firstIndex?: number;
-  onSnapToItem?: (index: number) => void;
+  activeIndex: number;
+  onSnapToItem: (index: number) => void;
 }
 
-export const TimelineCarousel: React.FC<TimelineCarouselProps> = ({
-  data,
-  firstIndex = 0,
-  onSnapToItem,
-}) => {
-  const timelineRef = useRef<ICarouselInstance>(null);
-  const [activeIndex, setActiveIndex] = useState<number>(0);
+export const TimelineCarousel = forwardRef<
+  ICarouselInstance,
+  TimelineCarouselProps
+>(({ data, activeIndex = 0, onSnapToItem }, ref) => {
+  const progressRingRef = useRef<ProgressRingHandle>(null);
+
   const handleSnapToItem = (index: number) => {
     Haptics.selectionAsync();
-    if (onSnapToItem) {
+    if (index != activeIndex) {
       onSnapToItem(index);
-      setActiveIndex(index);
     }
   };
 
@@ -141,6 +172,7 @@ export const TimelineCarousel: React.FC<TimelineCarouselProps> = ({
       <View style={styles.selectionRing} pointerEvents="none" />
       {/* <View style={styles.selectionRingContainer} pointerEvents="none">
         <ProgressRing
+          ref={progressRingRef}
           size={scale.m(60)}
           strokeWidth={scale.m(3)}
           borderRadius={scale.m(9.5)}
@@ -148,7 +180,7 @@ export const TimelineCarousel: React.FC<TimelineCarouselProps> = ({
         />
       </View> */}
       <Carousel
-        ref={timelineRef}
+        ref={ref}
         loop={false}
         width={CAROUSEL_ITEM_WIDTH}
         height={RING_SIZE + 20}
@@ -159,19 +191,22 @@ export const TimelineCarousel: React.FC<TimelineCarouselProps> = ({
           parallaxScrollingScale: 1, // We handle scale manually in the Tile
           parallaxScrollingOffset: 0,
         }}
-        defaultIndex={firstIndex}
-        renderItem={({ item, index, animationValue }) => (
-          <FilterTile
-            item={item}
-            animationValue={animationValue}
-            index={index}
-            onPress={(i) =>
-              timelineRef?.current?.scrollTo({ index: i, animated: true })
-            }
-            activeIndex={activeIndex}
-            isSeen={false}
-          />
-        )}
+        defaultIndex={activeIndex}
+        renderItem={({ item, index, animationValue }) => {
+          return (
+            <FilterTile
+              item={item}
+              animationValue={animationValue}
+              index={index}
+              onPress={(i) => {
+                handleSnapToItem(i);
+              }}
+              lastIndex={data.length - 1}
+              activeIndex={activeIndex}
+              isSeen={false}
+            />
+          );
+        }}
         onSnapToItem={handleSnapToItem}
         // style={{
         //   width: PAGE_WIDTH,
@@ -181,7 +216,7 @@ export const TimelineCarousel: React.FC<TimelineCarouselProps> = ({
       />
     </View>
   );
-};
+});
 
 // --- Styles ---
 const styles = StyleSheet.create({

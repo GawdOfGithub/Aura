@@ -1,5 +1,9 @@
 import { useEvent } from "expo";
-import { useVideoPlayer, VideoView } from "expo-video";
+import {
+  StatusChangeEventPayload,
+  useVideoPlayer,
+  VideoView,
+} from "expo-video";
 import React, { memo, useEffect, useState } from "react";
 import { Image, StyleSheet, View, ViewStyle } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -43,16 +47,20 @@ const ActiveVideoComponent = memo(
       // CRITICAL: We do NOT auto-play in the setup. We let the useEffect below handle it.
     });
 
-    const { status } = useEvent(player, "statusChange", {
-      status: player.status,
-      isPlaying: player.playing,
-    });
+    const { status }: StatusChangeEventPayload = useEvent(
+      player,
+      "statusChange",
+      {
+        status: player.status,
+        isPlaying: player.playing,
+      },
+    );
 
     // 2. Playback Control Logic
     // This reacts instantly when the user swipes to this video
     useEffect(() => {
       if (shouldPlay) {
-        player.play();
+        player.replay();
       } else {
         player.pause();
       }
@@ -120,7 +128,6 @@ export const AppVideoPlayer: React.FC<AppVideoPlayerProps> = memo(
     onProgress,
   }) => {
     const [isVideoReady, setIsVideoReady] = useState(false);
-
     // If we unload the video (scroll far away), reset the ready state
     useEffect(() => {
       if (!shouldLoad) {
