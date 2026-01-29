@@ -12,7 +12,6 @@ export type VideoThumbnail = {
 
 interface UseThumbnailGeneratorOptions {
   videos: VideoNote[];
-  currentIndex: number;
   timePosition?: number;
   concurrencyLimit?: number; // New prop to control batch size
 }
@@ -49,7 +48,6 @@ const chunkArray = <T>(array: T[], size: number): T[][] => {
 
 export const useThumbnailGenerator = ({
   videos,
-  currentIndex,
   timePosition = 1000,
   concurrencyLimit = 3, // Default to 3 parallel generations
 }: UseThumbnailGeneratorOptions): ThumbnailResult => {
@@ -67,6 +65,11 @@ export const useThumbnailGenerator = ({
         mmkvStorage.contains(storageKey) ||
         generatingIds.current.has(video.id)
       ) {
+        console.log(
+          generatingIds,
+          mmkvStorage.contains(storageKey),
+          storageKey,
+        );
         return;
       }
 
@@ -80,8 +83,9 @@ export const useThumbnailGenerator = ({
         // Generate
         const { uri } = await VideoThumbnails.getThumbnailAsync(videoUri, {
           time: timePosition,
-          quality: 0.7,
+          quality: 0.4,
         });
+        console.log(videoUri, uri);
 
         // Save & Notify
         mmkvStorage.set(storageKey, uri);
@@ -99,43 +103,44 @@ export const useThumbnailGenerator = ({
   useEffect(() => {
     if (videos.length === 0) return;
 
-    const runBatchGeneration = async () => {
-      // A. Identify what NEEDS generation within lookahead
-      const videosToGenerate: VideoNote[] = [];
-      const end = Math.min(currentIndex, videos.length - 1);
+    let isCancelled = false;
 
-      for (let i = currentIndex; i <= end; i++) {
-        const video = videos[i];
-        const storageKey = getStorageKey(video.id);
+    const runFullQueueGeneration = async () => {
+      // Filter: Find ALL videos that lack a thumbnail in MMKV
+      const pendingVideos = videos.filter((video) => {
+        const key = getStorageKey(video.id);
+        const alreadyHas = mmkvStorage.contains(key);
+        const isGenerating = generatingIds.current.has(video.id);
+        return !alreadyHas && !isGenerating;
+      });
 
-        // Only queue if not in storage and not currently generating
-        if (
-          video &&
-          !mmkvStorage.contains(storageKey) &&
-          !generatingIds.current.has(video.id)
-        ) {
-          videosToGenerate.push(video);
-        }
-      }
-
-      if (videosToGenerate.length === 0) return;
+      if (pendingVideos.length === 0) return;
 
       setIsGenerating(true);
 
-      // B. Split into chunks (e.g., groups of 3)
-      const batches = chunkArray(videosToGenerate, concurrencyLimit);
+      // Chunk the work into small batches (e.g., 3 at a time)
+      const batches = chunkArray(pendingVideos, concurrencyLimit);
 
-      // C. Process batches sequentially
       for (const batch of batches) {
-        // Process items inside the batch in parallel
+        // STOP if the component unmounted or videos array changed
+        if (isCancelled) break;
+
+        // Wait for these 3 to finish before starting the next 3
         await Promise.all(batch.map((video) => generateThumbnail(video)));
       }
 
-      setIsGenerating(false);
+      if (!isCancelled) {
+        setIsGenerating(false);
+      }
     };
 
-    runBatchGeneration();
-  }, [currentIndex, videos, concurrencyLimit, generateThumbnail]);
+    runFullQueueGeneration();
+
+    // Cleanup: Stop the loop if dependencies change
+    return () => {
+      isCancelled = true;
+    };
+  }, [videos, concurrencyLimit, generateThumbnail]);
 
   // 3. Sync Accessor
   const getThumbnail = useCallback(

@@ -18,6 +18,7 @@ export type VideoNote = {
   createdAt: string;
 };
 
+export type VideoCaptured = Omit<VideoNote, "createdBy" | "createdAt">;
 export type UserReaction = {
   id: string;
   emoji: string;

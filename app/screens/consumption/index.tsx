@@ -7,17 +7,22 @@ import { scale } from "@/app/utility/responsive";
 import { getVideoHeightFromWidth } from "@/app/utility/videoSizeInfo";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { Dimensions, StyleSheet, View } from "react-native";
-import Carousel from "react-native-reanimated-carousel";
+import Carousel, { ICarouselInstance } from "react-native-reanimated-carousel";
 import { EmojiType } from "rn-emoji-keyboard";
 
 const { width, height } = Dimensions.get("window");
 const ITEM_HEIGHT = getVideoHeightFromWidth();
+
+const isRelayLive = true;
+
 const Consumption = () => {
   const navigation = useNavigation();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [selectedEmoji, setSelectedEmoji] = useState<EmojiType | null>(null);
+  const mainCarouselRef = useRef<ICarouselInstance>(null);
+  const timelineCarouselRef = useRef<ICarouselInstance>(null);
   const videoSource =
     "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4";
   const videos = VideosData;
@@ -25,9 +30,8 @@ const Consumption = () => {
 
   const { getThumbnail, cacheVersion } = useThumbnailGenerator({
     videos,
-    currentIndex: 0,
-    timePosition: 2000,
-    concurrencyLimit: 3, // Only generate 3 at a time
+    timePosition: 1000,
+    concurrencyLimit: 1, // Only generate 3 at a time
   });
   const thumbnailData = useMemo(() => {
     return videos.map((video) => {
@@ -35,18 +39,29 @@ const Consumption = () => {
       return thumb || { videoId: video.id, imagePath: null };
     });
   }, [videos, getThumbnail, cacheVersion]);
+  const onMainSnap = (index: number) => {
+    setActiveIndex(index);
+    // Sync Timeline to Main
+    timelineCarouselRef.current?.scrollTo({ index, animated: true });
+  };
+  const onTimelineSnap = (index: number) => {
+    setActiveIndex(index);
+    mainCarouselRef.current?.scrollTo({ index, animated: true });
+  };
   return (
     <View style={styles.container}>
       <Carousel
+        ref={mainCarouselRef}
         loop={false}
         width={width}
         height={ITEM_HEIGHT}
         data={videos}
+        defaultIndex={activeIndex}
         scrollAnimationDuration={500} // Faster snap feels snappier
-        onSnapToItem={(index) => setActiveIndex(index)}
+        onSnapToItem={onMainSnap}
         // Critical for performance:
         // 3 items rendered in tree: Prev, Current, Next
-        windowSize={3}
+        // windowSize={3}
         renderItem={({ item, index }) => {
           // LOGIC: Preload previous and next, but only play current
           const isFocused = index === activeIndex;
@@ -62,7 +77,6 @@ const Consumption = () => {
           );
         }}
       />
-      {/* <CameraControls cameraWrapperPositionFromBottom={scale.m(138)} /> */}
       <LinearGradient
         colors={["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 1)"]}
         start={{ x: 0.5, y: 0 }}
@@ -77,7 +91,12 @@ const Consumption = () => {
           height: scale.m(260),
         }}
       >
-        <TimelineCarousel data={thumbnailData} />
+        <TimelineCarousel
+          data={thumbnailData}
+          activeIndex={activeIndex}
+          ref={timelineCarouselRef}
+          onSnapToItem={onTimelineSnap}
+        />
       </LinearGradient>
 
       <EmojiKeyBoard

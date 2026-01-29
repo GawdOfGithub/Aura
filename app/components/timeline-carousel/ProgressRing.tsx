@@ -1,8 +1,23 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Animated, Easing, View } from "react-native";
+import React, { forwardRef, useImperativeHandle } from "react";
+import { View } from "react-native";
+import Animated, {
+  Easing,
+  cancelAnimation,
+  useAnimatedProps,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import Svg, { Rect } from "react-native-svg";
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
+
+const extraThickness = 0.4;
+
+export interface ProgressRingHandle {
+  play: () => void;
+  pause: () => void;
+  reset: () => void;
+}
 
 interface ProgressRingProps {
   size: number;
@@ -11,80 +26,74 @@ interface ProgressRingProps {
   duration?: number;
 }
 
-export const ProgressRing: React.FC<ProgressRingProps> = ({
-  size,
-  strokeWidth,
-  borderRadius,
-  duration = 10000,
-}) => {
-  // Perimeter of rounded rect ≈ 2 * (w + h) - 8 * r + (2 * PI * r)
-  // Simplified for a square: 4 * size - 8 * r + 2 * PI * r
-  // Or more simply: The perimeter of the path the stroke travels.
-  const radius = borderRadius;
-  const innerSize = size - strokeWidth;
-  const perimeter =
-    2 * (innerSize + innerSize) - 8 * radius + 2 * Math.PI * radius;
+export const ProgressRing = forwardRef<ProgressRingHandle, ProgressRingProps>(
+  ({ size, strokeWidth, borderRadius, duration = 10000 }, ref) => {
+    const radius = borderRadius;
+    const innerSize = size - strokeWidth;
 
-  const progressAnimation = useRef(new Animated.Value(1)).current;
-  const [debugSecond, setDebugSecond] = useState(0);
+    const perimeter =
+      2 * (innerSize + innerSize) - 8 * radius + 2 * Math.PI * radius;
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDebugSecond((prev) => {
-        if (prev >= 10) {
-          clearInterval(interval);
-          return 10;
-        }
+    const progress = useSharedValue(0);
 
-        const nextSec = prev + 1;
+    useImperativeHandle(ref, () => ({
+      play: () => {
+        const currentValue = progress.value;
+        if (currentValue >= 1) return;
 
-        const toValue = 1 - nextSec / 10;
+        const remainingDuration = (1 - currentValue) * duration;
 
-        Animated.timing(progressAnimation, {
-          toValue: toValue,
-          duration: 1000,
-          useNativeDriver: true,
+        progress.value = withTiming(1, {
+          duration: remainingDuration,
           easing: Easing.linear,
-        }).start();
+        });
+      },
 
-        return nextSec;
-      });
-    }, 1000);
+      pause: () => {
+        cancelAnimation(progress);
+      },
 
-    return () => clearInterval(interval);
-  }, []);
+      reset: () => {
+        cancelAnimation(progress);
+        progress.value = 0;
+      },
+    }));
 
-  // Interpolate the 0-1 value to the actual pixel length of the border
-  const strokeDashoffset = progressAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, perimeter], // 0 = Full border, Perimeter = No border
-  });
+    const animatedProps = useAnimatedProps(() => {
+      return {
+        strokeDashoffset: -progress.value * perimeter,
+      };
+    });
 
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Svg width={size} height={size}>
-        <AnimatedRect
-          x={strokeWidth / 2}
-          y={strokeWidth / 2}
-          width={size - strokeWidth}
-          height={size - strokeWidth}
-          rx={borderRadius}
-          ry={borderRadius}
-          stroke="white"
-          strokeWidth={strokeWidth}
-          fill="transparent"
-          strokeDasharray={perimeter}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-        />
-      </Svg>
-    </View>
-  );
-};
+    return (
+      <View
+        style={{
+          width: size,
+          height: size,
+          justifyContent: "center",
+          alignItems: "center",
+          transform: [{ rotateZ: "180deg" }],
+          overflow: "hidden",
+        }}
+      >
+        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <AnimatedRect
+            x={Math.round(strokeWidth / 2) - extraThickness}
+            y={Math.round(strokeWidth / 2) - extraThickness}
+            width={Math.round(size - strokeWidth)}
+            height={Math.round(size - strokeWidth)}
+            rx={Math.round(borderRadius)}
+            ry={Math.round(borderRadius)}
+            stroke="white"
+            strokeWidth={strokeWidth + extraThickness}
+            fill="transparent"
+            strokeDasharray={perimeter}
+            animatedProps={animatedProps}
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        </Svg>
+      </View>
+    );
+  },
+);
