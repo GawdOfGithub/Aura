@@ -1,14 +1,14 @@
 export const BASE_URL = () => {
-  // if (__DEV__) {
-  //   return "https://houseless-ashley-reflectingly.ngrok-free.dev/v2/";
-  // }
+  if (__DEV__) {
+    return "https://houseless-ashley-reflectingly.ngrok-free.dev/v2/";
+  }
   return "https://cam.dropapp.in/v2/";
 };
 
 export const BASE_URL_BARE = () => {
-  // if (__DEV__) {
-  //   return "https://houseless-ashley-reflectingly.ngrok-free.dev/";
-  // }
+  if (__DEV__) {
+    return "https://houseless-ashley-reflectingly.ngrok-free.dev/";
+  }
   return "https://cam.dropapp.in/";
 };
 export const ENDPOINTS = {

@@ -4,7 +4,7 @@
     "slug": "video-camera-chat",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./app/assets/images/png/Buzz.png",
+    "icon": "./app/assets/images/png/logo.png",
     "scheme": "ab-uipl-app",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -21,8 +21,8 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./app/assets/images/png/Buzz.png",
-        "backgroundImage": "./app/assets/images/png/Buzz.png"
+        "foregroundImage": "./app/assets/images/png/logo.png",
+        "backgroundImage": "./app/assets/images/png/logo.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -67,10 +67,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./app/assets/images/png/splash-icon.png",
+          "image": "./app/assets/images/png/logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#000000",
           "dark": {
             "backgroundColor": "#000000"
           }
