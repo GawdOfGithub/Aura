@@ -1,8 +1,15 @@
 import { useIsFocused } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 
-import { VideoCaptured } from "@/app/types";
-import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCameraSafety } from "@/app/hooks/useCameraSafety";
+import { AppVideoCaptured } from "@/app/types";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Dimensions,
   Pressable,
@@ -18,6 +25,10 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import {
+  useCameraPermission,
+  useMicrophonePermission,
+} from "react-native-vision-camera";
 import { Worklets } from "react-native-worklets-core";
 import { CrossIcon, SendIcon } from "../../assets/images/svg";
 import { scale } from "../../utility/responsive";
@@ -46,16 +57,21 @@ export type CameraState =
 interface CameraControlsProps {
   cameraContainerStyle?: ViewStyle;
   cameraWrapperPositionFromBottom: number;
+  chatId: string;
 }
 
 export const CameraControls: React.FC<CameraControlsProps> = ({
   cameraContainerStyle,
   cameraWrapperPositionFromBottom,
+  chatId,
 }) => {
   const cameraRef = useRef<AppCameraRef>(null);
   const isFocused = useIsFocused();
   const [cameraState, setCameraState] = useState<CameraState>("NoState");
-  const capturedVideoRef = useRef<VideoCaptured | null>(null);
+  const capturedVideoRef = useRef<AppVideoCaptured | null>(null);
+
+  // This handles AppState and the 500ms safety delay automatically
+  const isCameraActive = useCameraSafety(isFocused, 40);
   //  Add a shared value for visibility (1 = visible, 0 = hidden)
   // hidden when state is changing
   const cameraVisible = useSharedValue(1);
@@ -100,7 +116,13 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
     capturedVideoRef.current = null;
     setCameraState("NoState");
   };
-  const handleVideoCaptured = (capturedVideo: VideoCaptured) => {
+
+  const captureAndSendDone = () => {
+    // Have to move upload here
+    capturedVideoRef.current = null;
+    setCameraState("NoState");
+  };
+  const handleVideoCaptured = (capturedVideo: AppVideoCaptured) => {
     capturedVideoRef.current = capturedVideo;
     setCameraState("PreviewSendState");
   };
@@ -133,6 +155,22 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
       cameraRef.current.stopRecording();
     }
   };
+
+  // Camera and Microphone Permissions
+  const {
+    hasPermission: hasCamPermission,
+    requestPermission: requestCamPermission,
+  } = useCameraPermission();
+  const {
+    hasPermission: hasMicPermission,
+    requestPermission: requestMicPermission,
+  } = useMicrophonePermission();
+
+  useEffect(() => {
+    if (!hasCamPermission) requestCamPermission();
+    if (!hasMicPermission) requestMicPermission();
+  }, [hasCamPermission, hasMicPermission]);
+
   const containerStyle = useMemo((): ViewStyle => {
     if (cameraState === "ActionState") {
       return {
@@ -282,7 +320,10 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
           >
             <CrossIcon />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.sendWrapper]}>
+          <TouchableOpacity
+            style={[styles.sendWrapper]}
+            onPress={captureAndSendDone}
+          >
             <SendIcon />
           </TouchableOpacity>
           <View style={{ width: scale.m(32), height: scale.m(32) }} />
@@ -292,13 +333,17 @@ export const CameraControls: React.FC<CameraControlsProps> = ({
   }
   return (
     <GestureDetector gesture={panGesture}>
-      <View style={[containerStyle, cameraContainerStyle]}>
+      <View
+        style={[containerStyle, cameraContainerStyle]}
+        pointerEvents={cameraState == "NoState" ? "box-none" : "auto"}
+      >
         <Animated.View style={[animatedCameraStyle, cameraStateStyle]}>
           <AppCamera
             ref={cameraRef}
             forCapture={true}
-            cameraIsActive={isFocused}
+            cameraIsActive={isCameraActive}
             onVideoCaptured={handleVideoCaptured}
+            chatId={chatId}
           />
         </Animated.View>
 
@@ -359,7 +404,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: scale.m(24),
-    zIndex: 10,
+    zIndex: 11,
   },
   cancelWrapper: {
     width: scale.m(32),

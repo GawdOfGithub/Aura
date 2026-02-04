@@ -1,4 +1,6 @@
-import { VideoCaptured } from "@/app/types";
+import uploadQueueManager from "@/app/modules/upload/uploadQueueManager";
+import { enqueueVideo } from "@/app/store/features/upload/uploadSlice";
+import { AppVideoCaptured } from "@/app/types";
 import { nanoid } from "@reduxjs/toolkit";
 import React, {
   forwardRef,
@@ -34,13 +36,14 @@ type AppCameraProps = {
   forCapture: boolean;
   cameraIsActive: boolean;
   viewStyle?: ViewStyle;
-  onVideoCaptured: ({ videoPath, id }: VideoCaptured) => void;
+  chatId: string;
+  onVideoCaptured: ({ videoPath, id }: AppVideoCaptured) => void;
 };
 
 // --- COMPONENT ---
 
 export const AppCamera = forwardRef<AppCameraRef, AppCameraProps>(
-  ({ forCapture, cameraIsActive, viewStyle, onVideoCaptured }, ref) => {
+  ({ forCapture, cameraIsActive, viewStyle, onVideoCaptured, chatId }, ref) => {
     const dispatch = useAppDispatch();
     const camera = useRef<Camera>(null);
 
@@ -92,6 +95,7 @@ export const AppCamera = forwardRef<AppCameraRef, AppCameraProps>(
           id,
           file_name: `${id}.mp4`,
           file_type: "video/mp4",
+          chat_id: chatId,
         }),
       );
 
@@ -105,13 +109,17 @@ export const AppCamera = forwardRef<AppCameraRef, AppCameraProps>(
             videoPath: video.path,
             id: currentRecordingId.current ?? nanoid(),
           });
-          //   dispatch(
-          //     enqueueVideo({
-          //       id: currentRecordingId.current ?? nanoid(),
-          //       uri: video.path,
-          //     }),
-          //   );
-          //   uploadQueueManager.start();
+
+          // Uploader
+          // To be put right now after the send button
+          dispatch(
+            enqueueVideo({
+              id: currentRecordingId.current ?? nanoid(),
+              uri: video.path,
+              chatId: chatId,
+            }),
+          );
+          uploadQueueManager.start();
         },
         onRecordingError: (e) => {
           console.error(e);

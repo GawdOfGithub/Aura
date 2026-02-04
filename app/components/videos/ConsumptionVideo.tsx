@@ -1,7 +1,9 @@
 import { DownArrowIcon } from "@/app/assets/images/svg";
+import { CREATE_VIDEO_NOTE } from "@/app/screens/consumption";
 import { colors } from "@/app/theme";
-import { UserReaction, VideoNote } from "@/app/types";
+import { AppPost, RelayState, UserReaction } from "@/app/types";
 import { scale } from "@/app/utility/responsive";
+import { getFirstName } from "@/app/utility/stringUtility";
 import { formatTime12hWithDay } from "@/app/utility/timeFuctions";
 import { getVideoHeightFromWidth } from "@/app/utility/videoSizeInfo";
 import { useNavigation } from "@react-navigation/native";
@@ -15,24 +17,29 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AddToLiveRelay from "../consumption/AddToLiveRelay";
 import UserPhoto from "../profile/UserPhoto";
 import VideoOverlayText from "../text-components/VideoOverlayText";
 import StaticTimeAgo from "../time/StaticTime";
 import AppVideoPlayer from "./AppVideoPlayer";
 
 interface ConsumptionVideoContainerProps {
-  videoItem: VideoNote;
+  videoPost: AppPost;
+  relayState: RelayState;
   videoSeenData: UserReaction[];
   isFocused: boolean;
   shouldLoad: boolean;
+  relayEndTime: string;
 }
 const { width, height } = Dimensions.get("window");
 
 const ConsumptionVideoContainer = ({
-  videoItem,
+  videoPost,
+  relayState,
   videoSeenData,
   isFocused,
   shouldLoad,
+  relayEndTime,
 }: ConsumptionVideoContainerProps) => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(true);
   const [showReaction, setShowReaction] = useState(false);
@@ -85,22 +92,24 @@ const ConsumptionVideoContainer = ({
   );
   const navigation = useNavigation();
   const effectiveShouldPlay = isFocused && isVideoPlaying && !showReaction;
-
+  if (videoPost.id == CREATE_VIDEO_NOTE) {
+    return <AddToLiveRelay relayEndTime={relayEndTime} />;
+  }
   return (
     <Pressable
       style={styles.videoContainer}
       onPress={handlePlayPauseForReaction}
     >
       <AppVideoPlayer
-        source={videoItem.videoPath}
+        source={videoPost.videoFile}
         style={StyleSheet.absoluteFillObject}
         shouldLoad={shouldLoad}
         shouldPlay={effectiveShouldPlay}
       />
       <View style={[styles.videoLiveHeader, showReaction && { zIndex: 2 }]}>
         <StaticTimeAgo
-          relayState="live"
-          inputTime="2026-01-14T11:33:20.482910Z"
+          relayState={relayState}
+          inputTime={videoPost.createdAt}
         />
         <TouchableOpacity
           onPress={() => {
@@ -111,10 +120,10 @@ const ConsumptionVideoContainer = ({
         </TouchableOpacity>
       </View>
       <View style={[styles.videoSubHeader, showReaction && { zIndex: 2 }]}>
-        <VideoOverlayText text="Aditya" />
+        <VideoOverlayText text={getFirstName(videoPost.createdBy.name)} />
         <VideoOverlayText
           style={{ marginTop: scale.v(2) }}
-          text={formatTime12hWithDay("2026-01-14T11:33:20.482910Z")}
+          text={formatTime12hWithDay(videoPost.createdAt)}
         />
       </View>
       {showReaction && (

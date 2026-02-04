@@ -4,6 +4,7 @@ import { scale } from "../../utility/responsive";
 
 interface IconButtonProps {
   onPress?: () => void;
+  isActive?: boolean;
   Icon: React.ComponentType<any>;
   width?: number;
   height?: number;
@@ -19,9 +20,10 @@ interface IconButtonProps {
 export const IconButton: React.FC<IconButtonProps> = ({
   onPress,
   Icon,
+  isActive = true,
   width = 40,
   height = 40,
-  borderRadius = 35,
+  borderRadius = 20,
   borderWidth = 1.5,
   borderColor = "rgba(255, 255, 255, 0.04)",
   backgroundColor = "rgba(255, 255, 255, 0.08)",
@@ -31,7 +33,6 @@ export const IconButton: React.FC<IconButtonProps> = ({
 }) => {
   return (
     <TouchableOpacity
-      activeOpacity={0.7}
       onPress={onPress}
       style={[
         styles.buttonContainer,
@@ -55,7 +56,6 @@ export const IconButton: React.FC<IconButtonProps> = ({
 
 const styles = StyleSheet.create({
   buttonContainer: {
-    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
   },

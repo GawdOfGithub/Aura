@@ -1,17 +1,20 @@
 import { apiCall } from "@/app/service/apiCall";
 import { ENDPOINTS } from "@/app/service/endpoints";
-import { SendVideoResponse, UploadSignedData } from "@/app/types";
+import { CreatePostResponse, UploadSignedData } from "@/app/types";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { addCapturedVideo } from "../groups/groupPostsSlice";
 
 interface ArgUploadData {
   id: string;
   file_name: string;
   file_type: string;
+  chat_id: string;
 }
 
-interface UploadVideoArg {
-  fileKeyPath: string
+interface CreatePostArg {
+  camera_id: string;
+  s3_path: string;
+  file_type?: string;
+  reference_id: string;
 }
 
 export const fetchPresignedUrl = createAsyncThunk<
@@ -21,9 +24,26 @@ export const fetchPresignedUrl = createAsyncThunk<
 >("upload/getPresignedURL", async (uploadData, { rejectWithValue }) => {
   try {
     const data = await apiCall<UploadSignedData>({
-      url: ENDPOINTS.TEST_APP.GET_PRESIGNED_URL,
+      url: ENDPOINTS.POST.GET_PRESIGNED_URL,
       method: "POST",
       data: uploadData,
+    });
+    return { ...data, chat_id: uploadData.chat_id };
+  } catch (error: any) {
+    return rejectWithValue(error.message);
+  }
+});
+
+export const uploadDataToServer = createAsyncThunk<
+  CreatePostResponse,
+  CreatePostArg,
+  { rejectValue: string }
+>("video/uploadDataToServer", async (createPostData, { rejectWithValue }) => {
+  try {
+    const data = await apiCall<CreatePostResponse>({
+      url: ENDPOINTS.POST.CREATE_POST,
+      method: "POST",
+      data: createPostData,
     });
     return data;
   } catch (error: any) {
@@ -31,43 +51,21 @@ export const fetchPresignedUrl = createAsyncThunk<
   }
 });
 
-
-export const uploadDataToServer = createAsyncThunk<
-  SendVideoResponse,
-  UploadVideoArg,
-  { rejectValue: string }
->(
-  "video/uploadDataToServer",
-  async ({ fileKeyPath }, { rejectWithValue }) => {
-    try {
-      const data = await apiCall<SendVideoResponse>({
-        url: ENDPOINTS.TEST_APP.SEND_VIDEO,
-        method: "POST",
-        data: {
-          file_path: fileKeyPath,
-        },
-      });
-      return data;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-
+// to update local context and call server
 export const handleUploadCompletion = createAsyncThunk(
   "video/handleCompletion",
-  async (
-    payload: { fileKeyPath: string, localPath: string },
-    { dispatch }
-  ) => {
-    let { fileKeyPath, localPath } = payload
-    const response = await dispatch(
-      uploadDataToServer({ fileKeyPath: fileKeyPath })
+  async (payload: CreatePostArg, { dispatch }) => {
+    console.log(payload);
+    const response: CreatePostResponse = await dispatch(
+      uploadDataToServer(payload),
     ).unwrap();
-    await dispatch(addCapturedVideo({
-      tempPath: localPath, videoChatID: response.video_chat_id
-    }))
+    //TBD update local
+    // await dispatch(
+    //   addCapturedVideo({
+    //     tempPath: localPath,
+    //     videoChatID: response.video_chat_id,
+    //   }),
+    // );
     return response;
-  }
+  },
 );

@@ -29,9 +29,9 @@ export const formatTimerDisplay = (secondsDiff: number): string => {
     const hours = Math.floor(absSeconds / 3600);
 
     if (minutes < 60) {
-      return minutes <= 1 ? "1 minute ago" : `${minutes} mins ago`;
+      return minutes <= 1 ? "1m ago" : `${minutes}ms ago`;
     } else {
-      return hours <= 1 ? "1 hour ago" : `${hours} hours ago`;
+      return hours <= 1 ? "1h ago" : `${hours}h ago`;
     }
   }
 };

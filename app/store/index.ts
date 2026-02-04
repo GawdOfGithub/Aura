@@ -13,6 +13,7 @@ import {
 import { injectStore } from "../service/apiClient";
 import { mmkvReduxStorage } from "../storage/mmkvStorage";
 import { api } from "./apiSlice";
+import chatReducer from "./features/chats/chatSlice";
 import videoReducer from "./features/groups/groupPostsSlice";
 import groupReducer from "./features/groups/groupSlice";
 import uploadReducer from "./features/upload/uploadSlice";
@@ -20,14 +21,13 @@ import userReducer from "./features/users/userSlice";
 const PERSISTED_QUERY_PREFIXES = ["getGroupInfo"];
 
 const apiTransform = createTransform(
-
   (inboundState: any) => {
     if (!inboundState?.queries) return inboundState;
 
     const filteredQueries: any = {};
     Object.keys(inboundState.queries).forEach((key) => {
       const shouldPersist = PERSISTED_QUERY_PREFIXES.some((prefix) =>
-        key.startsWith(prefix)
+        key.startsWith(prefix),
       );
 
       if (shouldPersist) {
@@ -38,19 +38,19 @@ const apiTransform = createTransform(
     return {
       ...inboundState,
       queries: filteredQueries,
-      mutations: {}, 
-      subscriptions: {}, 
+      mutations: {},
+      subscriptions: {},
     };
   },
- 
+
   (outboundState: any) => outboundState,
-  { whitelist: ["api"] } 
+  { whitelist: ["api"] },
 );
 
 const persistConfig = {
   key: "root",
   storage: mmkvReduxStorage,
-  whitelist: ["user", "api"], 
+  whitelist: ["user", "api"],
   transforms: [apiTransform],
 };
 
@@ -59,6 +59,7 @@ const rootReducer = combineReducers({
   group: groupReducer,
   upload: uploadReducer,
   videos: videoReducer,
+  chat: chatReducer,
   [api.reducerPath]: api.reducer,
 });
 

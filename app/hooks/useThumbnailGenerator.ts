@@ -73,12 +73,12 @@ export const useThumbnailGenerator = ({
         return;
       }
 
-      if (!video.videoPath) return;
+      if (!video.videoFile) return;
 
       generatingIds.current.add(video.id);
 
       try {
-        const videoUri = resolveVideoUri(video.videoPath);
+        const videoUri = resolveVideoUri(video.videoFile);
 
         // Generate
         const { uri } = await VideoThumbnails.getThumbnailAsync(videoUri, {
@@ -151,7 +151,7 @@ export const useThumbnailGenerator = ({
       }
       return undefined;
     },
-    [],
+    [cacheVersion],
   );
 
   return { isGenerating, getThumbnail, cacheVersion };

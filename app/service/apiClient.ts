@@ -1,13 +1,7 @@
 import axios from "axios";
+import { BASE_URL } from "./endpoints";
 // import { store } from "../store";
 // import { logout } from "../store/features/users/userSlice";
-
-export const BASE_URL = () => {
-  if (__DEV__) {
-    return "https://houseless-ashley-reflectingly.ngrok-free.dev";
-  }
-  return "https://cam.dropapp.in";
-};
 
 let store: any;
 export const injectStore = (_store: any) => {
@@ -36,7 +30,7 @@ axiosInstance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 axiosInstance.interceptors.response.use(
@@ -51,11 +45,8 @@ axiosInstance.interceptors.response.use(
         store.dispatch({ type: "user/logout" });
       }
     }
-
-    const errorMessage =
-      error.response?.data?.message || "Something went wrong";
-    return Promise.reject(new Error(errorMessage));
-  }
+    return Promise.reject(error);
+  },
 );
 
 export default axiosInstance;

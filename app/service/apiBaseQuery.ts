@@ -1,15 +1,17 @@
 import type { BaseQueryFn } from "@reduxjs/toolkit/query/react";
-import type { AxiosError, AxiosRequestConfig } from "axios";
+import type { AxiosError, AxiosRequestConfig, Method } from "axios";
 import axiosInstance from "./apiClient";
 
 export const apiBaseQuery: BaseQueryFn<
-  {
-    url: string;
-    method?: AxiosRequestConfig["method"];
-    data?: AxiosRequestConfig["data"];
-    params?: AxiosRequestConfig["params"];
-    headers?: AxiosRequestConfig["headers"];
-  } | string,
+  | {
+      url: string;
+      method?: Method;
+      data?: AxiosRequestConfig["data"];
+      params?: AxiosRequestConfig["params"];
+      headers?: AxiosRequestConfig["headers"];
+      baseURL?: string;
+    }
+  | string,
   unknown,
   unknown
 > = async (args, api, extraOptions) => {
@@ -28,4 +30,3 @@ export const apiBaseQuery: BaseQueryFn<
     };
   }
 };
-

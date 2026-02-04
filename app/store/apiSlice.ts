@@ -4,6 +4,6 @@ import { apiBaseQuery } from "../service/apiBaseQuery";
 export const api = createApi({
   baseQuery: apiBaseQuery,
   reducerPath: "api",
-  tagTypes: ["General"],
+  tagTypes: ["General", "Chat", "User", "Posts"],
   endpoints: () => ({}),
 });

@@ -1,182 +1,208 @@
-import { LinearGradient } from "expo-linear-gradient";
-import { useVideoPlayer, VideoSource, VideoView } from "expo-video";
-import React from "react";
-import { Dimensions, StyleSheet, Text, View } from "react-native";
-import { RelayState } from "../../types";
+import React, { useEffect, useMemo } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
+import { useSharedValue } from "react-native-reanimated";
+import { CoverDotted } from "../../assets/images/svg";
+import { AppBaseUser, VideoStatus } from "../../types";
 import { scale } from "../../utility/responsive";
+import AppVideoPlayer from "../videos/AppVideoPlayer";
+import BlurredVideo from "../videos/BlurredVideo";
+import PixelatedVideo from "../videos/PixelatedVideo";
+
+import { useRelayState } from "@/app/hooks/useRelayState";
+import { useGetCurrentUserInfoQuery } from "@/app/store/features/users/userApi";
 import CountdownTimer from "../time/CountdownTimer";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
-const VideoPlayerView: React.FC<{ videoSource: VideoSource; style: any }> = ({
-  videoSource,
-  style,
-}) => {
-  const player = useVideoPlayer(videoSource, (p) => {
-    p.loop = true;
-    p.muted = true;
-  });
-
-  React.useEffect(() => {
-    player.play();
-  }, [player]);
-
-  return (
-    <VideoView
-      player={player}
-      style={style}
-      contentFit="cover"
-      nativeControls={false}
-    />
-  );
-};
-
-type SubState = "seen" | "unseen";
-
-interface User {
-  id: string;
-  name: string;
-  dp: any; // ImageSourcePropType
-}
+import {
+  renderSeenAvatars,
+  renderUnseenAvatars,
+} from "../user-dps/CoverDpHelper";
 
 interface CoverProps {
-  videoSource: VideoSource;
+  chatId: string;
+  relayId: string;
+  videoSource: any;
+  thumbnailSource?: string;
   relayEndTime: string;
   newCount?: number;
-  relayState: RelayState;
-  subState?: SubState;
   isActive?: boolean;
   isScrolling?: boolean;
-  shouldBlur?: boolean;
-  users: User[];
+  users: AppBaseUser[];
+  videoStatus?: VideoStatus;
 }
 
+export const EmptyCover = ({}) => {
+  return (
+    <View style={styles.container}>
+      <View style={styles.emptyStateContainer}>
+        <View style={StyleSheet.absoluteFill}>
+          <CoverDotted width={scale.m(320)} height={scale.m(320)} />
+        </View>
+
+        <View style={styles.silenceContainer}>
+          <Text style={styles.timeLabelText}>22m</Text>
+          <Text style={styles.subText}>of silence</Text>
+        </View>
+
+        <Text style={styles.startLineText}>Start a line</Text>
+      </View>
+    </View>
+  );
+};
 export const Cover: React.FC<CoverProps> = ({
+  chatId,
+  relayId,
   videoSource,
+  thumbnailSource,
   relayEndTime,
   newCount = 3,
-  relayState = "live",
-  subState = "unseen",
   isActive = true,
   isScrolling = false,
-  shouldBlur = false,
   users = [],
+  videoStatus = "seen", // TBD
 }) => {
-  const isBlurred = subState === "unseen";
-  const badgeText = React.useMemo(
-    () => (subState === "unseen" ? `${newCount} New` : `${newCount} 🔥`),
-    [subState, newCount],
+  const { currentUserId } = useGetCurrentUserInfoQuery(undefined, {
+    selectFromResult: ({ data }) => ({
+      currentUserId: data?.id,
+    }),
+  });
+  const shouldShowVideo = isActive && !isScrolling;
+  const relayState = useRelayState({
+    chatId: chatId!,
+    relayId,
+    currentUserId,
+  });
+  const paused = useSharedValue(!shouldShowVideo);
+  useEffect(() => {
+    paused.value = !shouldShowVideo;
+  }, [shouldShowVideo, paused]);
+
+  const videoUri = useMemo(() => {
+    if (typeof videoSource === "string") return videoSource;
+    if (typeof videoSource === "number")
+      return Image.resolveAssetSource(videoSource).uri;
+    if (videoSource?.uri) return videoSource.uri;
+    return "";
+  }, [videoSource]);
+
+  const badgeText = useMemo(
+    () => (videoStatus == "unseen" ? `+${newCount}` : `${newCount}`),
+    [videoStatus, newCount],
   );
 
-  const badgeColors = React.useMemo(() => {
+  const badgeColors = useMemo(() => {
+    const defaults = {
+      bg: "transparent",
+      text: "#FFFFFF",
+      borderColor: "transparent",
+      borderWidth: 0,
+    };
+
     switch (relayState) {
       case "live":
         return {
-          bg: "rgba(30, 230, 42, 0.15)",
-          gradient: ["#5AE000", "#26C72F"],
-          text: "#FFFFFF",
-          ring: "#26C72F",
-          borderColor: subState === "unseen" ? "#FFFFFF7A" : undefined,
-          borderWidth: subState === "unseen" ? scale.m(1) : 0,
+          ...defaults,
+          bg: "rgba(255, 87, 25, 1)",
+          borderColor: videoStatus === "unseen" ? "#FFFFFF7A" : "transparent",
+          borderWidth: videoStatus === "unseen" ? scale.m(1) : 0,
         };
       case "ended":
+        if (videoStatus === "unseen") {
+          return {
+            ...defaults,
+            borderColor: "rgba(255, 87, 25, 1)",
+            borderWidth: scale.m(1),
+            bg: "rgba(255, 87, 25, 1)",
+          };
+        }
         return {
+          ...defaults,
           bg: "#FFFFFF",
-          gradient: ["#FFFFFF", "#D4D4D4"],
           text: "#3F3F3F",
-          ring: "#FFFFFF",
           borderColor: "rgba(255, 255, 255, 0.48)",
           borderWidth: scale.m(1),
         };
       case "missed":
         return {
-          bg: "#FF7D71",
-          gradient: ["#FF7D71", "#F52816"],
-          text: "#FFFFFF",
-          ring: "#E53935",
+          ...defaults,
+          bg: "rgba(255, 87, 25, 1)",
           borderColor: "rgba(255, 255, 255, 0.48)",
           borderWidth: 1,
         };
+      default:
+        return defaults;
     }
-  }, [relayState, subState]);
-
-  const shouldShowVideo = React.useMemo(
-    () => isActive && !isScrolling,
-    [isActive, isScrolling],
-  );
-
-  // Use the smart timer hook with dynamic update intervals
+  }, [relayState, videoStatus]);
 
   return (
     <View style={styles.container}>
-      <CountdownTimer
-        relayEndTime={relayEndTime}
-        isActive={isActive}
-        relayState={relayState}
-      />
-      <View style={[styles.videoCircle, { borderColor: badgeColors.ring }]}>
-        <View style={styles.videoCircleInner}>
-          {shouldShowVideo && (
-            <VideoPlayerView videoSource={videoSource} style={styles.video} />
-          )}
-
-          {(relayState === "live" || relayState === "missed") && (
-            <View
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: scale.v(172),
-
-                opacity: 0.7,
-              }}
-            >
-              <LinearGradient
-                colors={
-                  relayState === "live"
-                    ? ["#5AE00000", "#5AE000"]
-                    : ["rgba(255, 50, 32, 0)", "rgba(255, 50, 32, 1)"]
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-            </View>
-          )}
-        </View>
-      </View>
-      <View
-        style={[
-          styles.newBadge,
-          badgeColors.borderColor
-            ? {
-                borderColor: badgeColors.borderColor,
-                borderWidth: badgeColors.borderWidth,
-              }
-            : {},
-        ]}
-      >
-        <View style={styles.newBadgeGradient}>
-          {badgeColors.gradient ? (
-            <LinearGradient
-              colors={badgeColors.gradient as [string, string]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={StyleSheet.absoluteFill}
+      <View style={styles.videoCircle}>
+        {videoStatus === "unseen" ? (
+          <BlurredVideo
+            source={videoUri}
+            width={scale.m(343)}
+            height={scale.m(343)}
+            videoPaused={paused}
+            isMuted={true}
+            isLooped={true}
+            style={[StyleSheet.absoluteFill, { zIndex: 0 }]}
+          />
+        ) : relayState === "missed" ? (
+          <PixelatedVideo
+            source={videoUri}
+            width={scale.m(343)}
+            height={scale.m(343)}
+            videoPaused={paused}
+            pixelSize={18}
+            isMuted={true}
+            isLooped={true}
+            style={[StyleSheet.absoluteFill, { zIndex: 0 }]}
+          />
+        ) : (
+          <>
+            <AppVideoPlayer
+              source={videoUri}
+              thumbnailSource={thumbnailSource}
+              shouldLoad={shouldShowVideo}
+              shouldPlay={shouldShowVideo}
+              loop={true}
+              muted={true}
+              style={StyleSheet.absoluteFillObject}
             />
-          ) : (
+          </>
+        )}
+
+        {videoStatus === "seen"
+          ? renderSeenAvatars(users, {
+              relayCount: newCount,
+              relayEndTime,
+              isActive,
+              relayState,
+            })
+          : renderUnseenAvatars(users)}
+
+        {videoStatus === "unseen" && (
+          <View style={styles.footerOverlay}>
+            <CountdownTimer
+              relayEndTime={relayEndTime}
+              isActive={isActive}
+              relayState={relayState}
+            />
+
             <View
               style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: badgeColors.bg },
+                styles.newBadge,
+                {
+                  backgroundColor: badgeColors.bg,
+                  borderColor: badgeColors.borderColor,
+                  borderWidth: badgeColors.borderWidth,
+                },
               ]}
-            />
-          )}
-          <Text style={[styles.newBadgeText, { color: badgeColors.text }]}>
-            {badgeText}
-          </Text>
-        </View>
+            >
+              <Text style={[styles.newBadgeText, { color: badgeColors.text }]}>
+                {badgeText}
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -188,47 +214,86 @@ const styles = StyleSheet.create({
     height: scale.v(376),
     alignItems: "center",
     alignSelf: "center",
+    justifyContent: "center",
   },
-
   videoCircle: {
-    width: scale.m(320),
-    height: scale.m(320),
-    borderRadius: scale.m(200),
+    width: scale.m(343),
+    height: scale.m(343),
+    borderRadius: scale.m(56),
     overflow: "hidden",
-    borderWidth: 4,
-    borderColor: "#26C72F",
-    backgroundColor: "#000",
+    borderWidth: 3,
+    borderColor: "rgba(255, 255, 255, 0.16)",
+    backgroundColor: "#1A1A1A",
+    position: "relative",
   },
-  video: {
-    width: "100%",
-    height: "100%",
-  },
-
-  videoCircleInner: {
-    width: "100%",
-    height: "100%",
-    overflow: "hidden",
-    borderRadius: scale.m(200),
-  },
-  newBadge: {
-    marginTop: scale.v(-14),
-    alignSelf: "center",
-    height: scale.v(28),
-    borderRadius: scale.m(18),
-    borderColor: "rgba(255, 255, 255, 0.8)",
-    overflow: "hidden",
+  footerOverlay: {
+    position: "absolute",
+    bottom: scale.m(16),
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: scale.m(16),
     zIndex: 10,
   },
-  newBadgeGradient: {
-    flex: 1,
+  newBadge: {
+    height: scale.v(48),
+    width: scale.m(48),
+    borderRadius: scale.m(68),
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: scale.h(12),
+    overflow: "hidden",
   },
   newBadgeText: {
-    fontSize: scale.fontFixed(14),
-    lineHeight: scale.m(20),
-    color: "#FFFFFF",
+    fontSize: scale.fontFixed(20),
     fontWeight: "700",
+  },
+  // --- EMPTY STATE STYLES ---
+  emptyStateContainer: {
+    width: scale.m(320),
+    height: scale.m(320),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  silenceContainer: {
+    position: "absolute",
+    bottom: "50%",
+    marginBottom: scale.v(78),
+    alignItems: "center",
+    width: "100%",
+    zIndex: 6,
+  },
+  timeLabelText: {
+    fontFamily: "SN Pro",
+    fontWeight: "700",
+    fontSize: scale.fontFixed(18),
+    lineHeight: scale.fontFixed(18),
+    letterSpacing: -0.03 * 18,
+    textAlign: "center",
+    color: "rgba(255, 255, 255, 0.48)",
+    zIndex: 6,
+  },
+  subText: {
+    marginTop: scale.v(2),
+    fontFamily: "SN Pro",
+    fontWeight: "600",
+    fontSize: scale.fontFixed(14),
+    lineHeight: scale.fontFixed(20),
+    letterSpacing: -0.03 * 14,
+    textAlign: "center",
+    color: "rgba(255, 255, 255, 0.48)",
+    zIndex: 6,
+  },
+  startLineText: {
+    width: scale.m(171),
+    textAlign: "center",
+    fontFamily: "SN Pro",
+    fontWeight: "700",
+    fontSize: scale.fontFixed(32),
+    lineHeight: scale.fontFixed(32),
+    letterSpacing: -0.03 * 32,
+    color: "rgba(255, 255, 255, 0.48)",
+    zIndex: 5,
   },
 });

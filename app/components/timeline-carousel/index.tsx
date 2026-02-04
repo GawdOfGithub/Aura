@@ -18,6 +18,7 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 
+import { CREATE_VIDEO_NOTE } from "@/app/screens/consumption";
 import Carousel, { ICarouselInstance } from "react-native-reanimated-carousel";
 import { ProgressRingHandle } from "./ProgressRing";
 
@@ -91,7 +92,7 @@ const FilterTile: React.FC<TileProps> = ({
     return { opacity };
   }, [isSeen]);
 
-  if (index == lastIndex) {
+  if (item.videoId == CREATE_VIDEO_NOTE) {
     return (
       <View style={[styles.tileContainer]}>
         <Pressable onPress={() => onPress(index)}>
@@ -133,6 +134,7 @@ const FilterTile: React.FC<TileProps> = ({
           ) : (
             <ActivityIndicator size={"small"} style={{ alignSelf: "center" }} />
           )}
+
           <Animated.View
             style={[
               StyleSheet.absoluteFill,
@@ -203,7 +205,7 @@ export const TimelineCarousel = forwardRef<
               }}
               lastIndex={data.length - 1}
               activeIndex={activeIndex}
-              isSeen={false}
+              isSeen={true}
             />
           );
         }}

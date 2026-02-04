@@ -1,4 +1,4 @@
-import { handleUploadCompletion } from "@/app/store/features/upload/uploadThunk";
+import { postAPI } from "@/app/store/features/posts/postsApi";
 import { measureDuration } from "@/utilities/measureDuration";
 import { compressVideoNative } from "@/utilities/videoCompressor";
 import BackgroundService from "react-native-background-actions";
@@ -21,7 +21,7 @@ class UploadQueueManager {
   private static instance: UploadQueueManager;
   private isRunning: boolean = false;
 
-  private constructor() { }
+  private constructor() {}
 
   public static getInstance(): UploadQueueManager {
     if (!UploadQueueManager.instance) {
@@ -41,7 +41,7 @@ class UploadQueueManager {
       const state = store.getState();
       const queue = getUploadQueue(state);
       const nextJobId = selectNextJobId(state);
-      console.log("starting upload of jobID", queue, nextJobId)
+      console.log("starting upload of jobID", queue, nextJobId);
       // A. If Queue is Empty -> Kill Service
       if (!nextJobId) {
         console.log("[UploadQueue] Queue empty. Stopping service.");
@@ -64,13 +64,12 @@ class UploadQueueManager {
    * Processes a single video upload
    */
   private processJob = async (jobId: string) => {
-
     const state = store.getState();
     const job = selectItemById(state, jobId);
-    console.log("process upload of job id ", job)
+    console.log("process upload of job id ", job);
 
     const config = getUploadConfigById(state, jobId);
-    console.log("process upload of job ", job, config)
+    console.log("process upload of job ", job, config);
     if (!job || !config) return;
     if (!job.localUri) return;
     try {
@@ -78,29 +77,42 @@ class UploadQueueManager {
       let uploadUri = job.localUri ?? "";
       if (!job.isCompressed) {
         // 1. Compress
-        const { result: compressedUri, durationMs: compTime } = await measureDuration(() =>
-          compressVideoNative(uploadUri)
-        );
+        const { result: compressedUri, durationMs: compTime } =
+          await measureDuration(() => compressVideoNative(uploadUri));
 
         console.log(`[UploadQueue] Compression took: ${compTime}ms`);
         // const compressedUri = await compressVideoNative(uploadUri);
-        store.dispatch(compressionSuccess({ id: jobId, newUri: compressedUri }));
-        uploadUri = compressedUri
+        store.dispatch(
+          compressionSuccess({ id: jobId, newUri: compressedUri }),
+        );
+        uploadUri = compressedUri;
       }
 
       // 2. Upload
-      const { result: s3Key, durationMs: uploadTime } = await measureDuration<string>(() =>
-        performUpload(uploadUri, config)
-      );
-      console.log(`[UploadQueue] Upload took: ${uploadTime}ms`);
-      // const s3Key = await performUpload(uploadUri, config);
+      // const { result: s3Key, durationMs: uploadTime } = await measureDuration<string>(() =>
+      //   performUpload(uploadUri, config)
+      // );
+      //console.log(`[UploadQueue] Upload took: ${uploadTime}ms`);
+      const s3Key = await performUpload(uploadUri, config);
 
       // 3. Success Dispatch
       store.dispatch(uploadSuccess({ id: jobId, key: s3Key }));
-      store.dispatch(handleUploadCompletion({
-        localPath: job.localUri,
-        fileKeyPath: s3Key
-      }))
+      await store
+        .dispatch(
+          postAPI.endpoints.addPost.initiate({
+            camera_id: job.chatId,
+            s3_path: s3Key,
+            reference_id: jobId,
+          }),
+        )
+        .unwrap();
+      // store.dispatch(
+      //   handleUploadCompletion({
+      //     camera_id: job.chatId,
+      //     s3_path: s3Key,
+      //     reference_id: jobId,
+      //   }),
+      // );
       console.log(`[UploadQueue] Job ${jobId} Success`);
     } catch (error) {
       console.error(`[UploadQueue] Job ${jobId} Failed`, error);
@@ -119,7 +131,7 @@ class UploadQueueManager {
 
     const state = store.getState();
     const queueLen = state.upload.queue.length;
-    console.log(queueLen)
+    console.log(queueLen);
     if (queueLen === 0) return; // Nothing to do
 
     this.isRunning = true;
@@ -133,14 +145,14 @@ class UploadQueueManager {
         type: "mipmap",
       },
       color: "#ff00ff",
-      linkingURI: 'ab-uipl-app://',
+      linkingURI: "ab-uipl-app://",
       parameters: {
         delay: 1000,
       },
     };
 
     try {
-      console.log("starting background server")
+      console.log("starting background server");
       await BackgroundService.start(this.backgroundTask, options);
     } catch (e) {
       console.log("Error starting background service", e);

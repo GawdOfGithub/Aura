@@ -1,5 +1,3 @@
-export type { VideoData } from "../screens/HomeScreen";
-
 // Header components
 export { HomeScreenHeaders } from "./header/HomeScreenHeaders";
 

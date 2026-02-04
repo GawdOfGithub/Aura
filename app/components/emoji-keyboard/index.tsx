@@ -45,7 +45,7 @@ const EmojiKeyBoard = ({
       categoryPosition="bottom"
       //enableCategoryChangeGesture={true}
       disabledCategories={["symbols"]}
-      emojisByCategory={customEmojisByCategory}
+      //emojisByCategory={customEmojisByCategory} //solve for flicker
       onEmojiSelected={onEmojiSelected}
       theme={{
         container: "#232322",

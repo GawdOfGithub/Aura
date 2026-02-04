@@ -1,10 +1,11 @@
-import { UserData } from "@/app/types";
+import { ServerUserResponse } from "@/app/types";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { useGetCurrentUserInfoQuery } from "./userApi";
 
 // 1. Define State Shape
 interface UserState {
   token: string | null;
-  data: UserData | null;
+  data: ServerUserResponse | null;
   loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
@@ -31,7 +32,7 @@ const userSlice = createSlice({
     },
     login: (
       state,
-      action: PayloadAction<{ token: string; userData: UserData }>
+      action: PayloadAction<{ token: string; userData: ServerUserResponse }>,
     ) => {
       state.token = action.payload.token;
       state.data = action.payload.userData;
@@ -41,4 +42,12 @@ const userSlice = createSlice({
 });
 
 export const { login, logout } = userSlice.actions;
+
+export const useGetCurrentUserId = () => {
+  return useGetCurrentUserInfoQuery(undefined, {
+    selectFromResult: ({ data }) => ({
+      currentUserId: data?.id,
+    }),
+  });
+};
 export default userSlice.reducer;

@@ -1,3 +1,4 @@
+import { useGetCurrentUserInfoQuery } from "@/app/store/features/users/userApi";
 import React from "react";
 import {
   DimensionValue,
@@ -7,34 +8,40 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { FavoriteIcon } from "../../assets/images/svg";
+import { BellIcon } from "../../assets/images/svg";
 import { scale } from "../../utility/responsive";
 import { IconButton } from "../buttons";
 
-const imgImage465 = require("../../assets/images/png/test_image.png");
-
 interface HomeScreenHeadersProps {
-  onBackPress?: () => void;
+  onProfilePress?: () => void;
   onStarPress?: () => void;
   groupName?: string;
-  profileImage?: string;
+
   headerHeight: DimensionValue;
 }
 
 export const HomeScreenHeaders: React.FC<HomeScreenHeadersProps> = ({
-  onBackPress,
+  onProfilePress,
   onStarPress,
   headerHeight,
-  groupName = "Blr Peeps",
-  profileImage = imgImage465,
+  groupName = "",
 }) => {
+  const { profilePhoto } = useGetCurrentUserInfoQuery(undefined, {
+    selectFromResult: ({ data }) => ({
+      profilePhoto: data?.profilePhoto,
+    }),
+  });
+
   return (
     <View style={[styles.container, { height: headerHeight }]}>
       <View style={styles.content}>
-        <TouchableOpacity onPress={onBackPress} style={styles.profileButton}>
+        <TouchableOpacity onPress={onProfilePress} style={styles.profileButton}>
           <View style={styles.profileButtonGradient}>
             <View style={styles.profileImageContainer}>
-              <Image source={profileImage} style={styles.profileImage} />
+              <Image
+                source={{ uri: profilePhoto }}
+                style={styles.profileImage}
+              />
             </View>
           </View>
         </TouchableOpacity>
@@ -45,7 +52,7 @@ export const HomeScreenHeaders: React.FC<HomeScreenHeadersProps> = ({
           </View>
         </View>
 
-        <IconButton onPress={onStarPress} Icon={FavoriteIcon} />
+        <IconButton onPress={onStarPress} Icon={BellIcon} />
       </View>
     </View>
   );

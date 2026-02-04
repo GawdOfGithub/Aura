@@ -1,5 +1,5 @@
-const BASE_URL = "https://houseless-ashley-reflectingly.ngrok-free.dev";
-//export const BASE_URL = "https://cam.dropapp.in";
+//const BASE_URL = "https://houseless-ashley-reflectingly.ngrok-free.dev";
+export const BASE_URL = "https://cam.dropapp.in";
 
 export const OTPRequestCreateURL = () => {
   return `${BASE_URL}/users/otp-request-create?dev=true`;

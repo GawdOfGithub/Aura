@@ -18,6 +18,7 @@ export interface VideoItem {
   retryCount: number;
   createdAt: number;
   isCompressed: boolean;
+  chatId: string;
   // Server Data
   serverFileUuid?: string;
   uploadUrl?: string;
@@ -36,9 +37,9 @@ const uploadSlice = createSlice({
   reducers: {
     enqueueVideo: (
       state,
-      action: PayloadAction<{ id: string; uri: string }>
+      action: PayloadAction<{ id: string; uri: string; chatId: string }>,
     ) => {
-      const { id, uri } = action.payload;
+      const { id, uri, chatId } = action.payload;
 
       // If entity exists (URL fetched first), update it. If not, create it.
       if (!state.entities[id]) {
@@ -47,8 +48,9 @@ const uploadSlice = createSlice({
           localUri: uri,
           status: UploadStatus.PREPARING,
           retryCount: 0,
+          chatId: chatId,
           createdAt: Date.now(),
-          isCompressed: false
+          isCompressed: false,
         };
       } else {
         state.entities[id].localUri = uri;
@@ -67,7 +69,10 @@ const uploadSlice = createSlice({
         state.entities[action.payload].status = UploadStatus.UPLOADING;
       }
     },
-    compressionSuccess: (state, action: PayloadAction<{ id: string; newUri: string }>) => {
+    compressionSuccess: (
+      state,
+      action: PayloadAction<{ id: string; newUri: string }>,
+    ) => {
       const { id, newUri } = action.payload;
       if (state.entities[id]) {
         state.entities[id].localUri = newUri;
@@ -76,7 +81,7 @@ const uploadSlice = createSlice({
     },
     uploadSuccess: (
       state,
-      action: PayloadAction<{ id: string; key: string }>
+      action: PayloadAction<{ id: string; key: string }>,
     ) => {
       const { id, key } = action.payload;
       state.queue = state.queue.filter((itemId) => itemId !== id);
@@ -123,13 +128,12 @@ const uploadSlice = createSlice({
             retryCount: 0,
             createdAt: Date.now(),
             isCompressed: false,
-            serverFileUuid: data.file_uuid,
             uploadUrl: data.url,
             s3Key: data.key,
+            chatId: data.chat_id,
             uploadHeaders: data.headers,
           };
         } else {
-          state.entities[id].serverFileUuid = data.file_uuid;
           state.entities[id].uploadUrl = data.url;
           state.entities[id].s3Key = data.key;
           state.entities[id].uploadHeaders = data.headers;
@@ -150,31 +154,30 @@ const uploadSlice = createSlice({
   },
 });
 
-export const { enqueueVideo, markUploading, compressionSuccess, uploadSuccess, uploadFailure } =
-  uploadSlice.actions;
-export const getUploadQueue = (state: RootState) => state.upload.queue
+export const {
+  enqueueVideo,
+  markUploading,
+  compressionSuccess,
+  uploadSuccess,
+  uploadFailure,
+} = uploadSlice.actions;
+export const getUploadQueue = (state: RootState) => state.upload.queue;
 export const selectNextJobId = (state: RootState) => state.upload.queue[0]; // Peek first item
 export const selectItemById = (state: RootState, id: string) =>
   state.upload.entities[id];
 
 export const getUploadConfigById = (
   state: RootState,
-  id: string
-): UploadSignedData => {
+  id: string,
+): Omit<UploadSignedData, "chat_id"> => {
   const videoItem = state.upload.entities[id];
-  console.log("here is the videoItem", videoItem)
+  console.log("here is the videoItem", videoItem);
 
-  if (
-    !videoItem.serverFileUuid ||
-    !videoItem.uploadUrl ||
-    !videoItem.s3Key ||
-    !videoItem.uploadHeaders
-  ) {
+  if (!videoItem.uploadUrl || !videoItem.s3Key || !videoItem.uploadHeaders) {
     throw new Error(`Upload config incomplete for video ${id}`);
   }
-  console.log("here is the videoItem", videoItem)
+  console.log("here is the videoItem", videoItem);
   return {
-    file_uuid: videoItem.serverFileUuid,
     url: videoItem.uploadUrl,
     key: videoItem.s3Key,
     headers: videoItem.uploadHeaders,

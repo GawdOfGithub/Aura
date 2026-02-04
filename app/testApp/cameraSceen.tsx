@@ -79,7 +79,7 @@ export const SeamlessCamera = ({
   useEffect(() => {
     setZoom(minZoom);
   }, [device?.id]);
-
+  const chat_id = "xyz";
   const startRecording = () => {
     if (!camera.current) return;
     setIsRecording(true);
@@ -91,6 +91,7 @@ export const SeamlessCamera = ({
         id: uniqueSessionId,
         file_name: `${uniqueSessionId}.mp4`,
         file_type: "video/mp4",
+        chat_id: chat_id,
       }),
     );
 
@@ -116,6 +117,7 @@ export const SeamlessCamera = ({
               ? currentRecordingId.current
               : nanoid(),
             uri: video.path,
+            chatId: chat_id,
           }),
         );
         uploadQueueManager.start();
