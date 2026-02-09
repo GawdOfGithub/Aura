@@ -9,6 +9,10 @@ import ConsumptionScreen from "./screens/consumption";
 import { useAppSelector } from "./store/hooks";
 import LoginScreen from "./testApp/loginScreen";
 import { VideoPreviewScreen } from "./testApp/videoPreviewScreen";
+import JoinGroupScreen from "@/app/components/world-switcher/JoinGroupScreen";
+import CreateGroupFlow from "./screens/world-switcher/CreateGroupFlow";
+import WorldSwitcher from "./screens/world-switcher";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 const Stack = createNativeStackNavigator();
 
@@ -21,30 +25,43 @@ export default function AppNavigation() {
   useLoadIntialData();
 
   return (
-    <NavigationContainer>
-      {!isAuthenticated ? (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Login" component={LoginScreen} />
-        </Stack.Navigator>
-      ) : (
-        <GestureHandlerRootView>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Home">
-              {(props) => <HomeScreen {...props} initialIndex={0} />}
-            </Stack.Screen>
-            <Stack.Screen
-              name="Consumption"
-              component={ConsumptionScreen}
-              options={{
-                animation: "slide_from_bottom",
-                gestureEnabled: true,
-                gestureDirection: "vertical",
-              }}
-            />
-            <Stack.Screen name="VideoPreview" component={VideoPreviewScreen} />
-          </Stack.Navigator>
-        </GestureHandlerRootView>
-      )}
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <BottomSheetModalProvider>
+        <NavigationContainer>
+          {!isAuthenticated ? (
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="Login" component={LoginScreen} />
+            </Stack.Navigator>
+          ) : (
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="Home">
+                {(props) => <HomeScreen {...props} initialIndex={0} />}
+              </Stack.Screen>
+              <Stack.Screen
+                name="Consumption"
+                component={ConsumptionScreen}
+                options={{
+                  animation: "slide_from_bottom",
+                  gestureEnabled: true,
+                  gestureDirection: "vertical",
+                }}
+              />
+              <Stack.Screen name="VideoPreview" component={VideoPreviewScreen} />
+              <Stack.Screen
+                name="WorldSwitcher"
+                component={WorldSwitcher}
+                options={{
+                  animation: "slide_from_bottom",
+                  gestureEnabled: true,
+                  gestureDirection: "vertical",
+                }}
+              />
+              <Stack.Screen name="CreateGroup" component={CreateGroupFlow} />
+              <Stack.Screen name="JoinGroup" component={JoinGroupScreen} />
+            </Stack.Navigator>
+          )}
+        </NavigationContainer>
+      </BottomSheetModalProvider>
+    </GestureHandlerRootView>
   );
 }

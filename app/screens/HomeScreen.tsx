@@ -6,7 +6,6 @@ import {
   HomeScreenHeaders,
   WorldToggleButton,
 } from "../components";
-
 import Carousel from "react-native-reanimated-carousel";
 import { EmptyCover } from "../components/relay/Cover";
 import { useChatInfo } from "../store/features/chats/chatApi";
@@ -15,7 +14,9 @@ import { usePrefetch } from "../store/features/posts/postsApi";
 import { useAppSelector } from "../store/hooks";
 import { AppRelay } from "../types";
 import { scale } from "../utility/responsive";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+import { RootStackParamList } from "../types/navigation";
 
 const FOOTER_HEIGHT = scale.m(308);
 const HEADER_HEIGHT = scale.m(104);
@@ -43,6 +44,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const { data: chat, isLoading } = useChatInfo(chatId);
   const relays = chat?.relays || [];
   const prefetchPosts = usePrefetch("getRelayPosts");
+
+  
 
   const carouselRef = useRef<any>(null);
 
@@ -127,11 +130,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         />
       )}
 
-      <WorldToggleButton
-        onPress={() => {}} // open world switcher screen
-        footerPositionFromBottom={scale.m(40)}
-      />
-
+       <WorldToggleButton
+          onPress={() => navigation.navigate("WorldSwitcher")}
+           footerPositionFromBottom={scale.m(40)}
+        />
       {/* <BlurBGCamera /> */}
     </View>
   );

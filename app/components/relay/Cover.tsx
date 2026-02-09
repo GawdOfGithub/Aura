@@ -7,7 +7,6 @@ import { scale } from "../../utility/responsive";
 import AppVideoPlayer from "../videos/AppVideoPlayer";
 import BlurredVideo from "../videos/BlurredVideo";
 import PixelatedVideo from "../videos/PixelatedVideo";
-
 import { useRelayState } from "@/app/hooks/useRelayState";
 import { useGetCurrentUserInfoQuery } from "@/app/store/features/users/userApi";
 import CountdownTimer from "../time/CountdownTimer";

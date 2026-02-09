@@ -13,4 +13,9 @@ export { default as FlashToggleIcon } from "./FlashToggleIcon";
 export { default as GlobeIcon } from "./GlobeIcon";
 export { default as SendIcon } from "./SendIcon";
 export { default as WorldSwitcherBackground } from "./WorldSwitcherBackground";
-
+export { default as GroupIcon } from "./GroupIcon";
+export { default as NewChat } from "./NewChat";
+export { default as TextHash } from "./TextHash";
+export { default as TickIcon } from "./TickIcon";
+export { default as CloseIcon } from "./CloseIcon";
+export { default as Dice } from "./Dice";
